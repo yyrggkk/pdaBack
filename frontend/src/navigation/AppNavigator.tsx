@@ -7,15 +7,18 @@ import { useAuthStore } from '../store/authStore';
 
 // === SCREENS ===
 import { LoginScreen } from '../screens/LoginScreen';
-import { ServeurScreenPlaceholder, CuisinierScreen } from '../screens/Placeholders';
 import MenuScreen from '../screens/MenuScreen';
 import TablesPlanScreen from '../screens/TablesPlanScreen';
 import TableDetailsScreen from '../screens/TableDetailsScreen';
+import KitchenScreen from '../screens/KitchenScreen';
+import CommandesScreen from '../screens/CommandesScreen';
+import FacturationScreen from '../screens/FacturationScreen';
 
 const AuthStack = createNativeStackNavigator();
 const AppStack = createNativeStackNavigator();
 const ServeurTabs = createBottomTabNavigator();
 const TableStack = createNativeStackNavigator();
+const CommandesStack = createNativeStackNavigator();
 
 const TablePlanNavigator = () => {
   return (
@@ -27,12 +30,22 @@ const TablePlanNavigator = () => {
   );
 };
 
+// Commandes stack: list → facturation
+const CommandesNavigator = () => {
+  return (
+    <CommandesStack.Navigator screenOptions={{ headerShown: false }}>
+      <CommandesStack.Screen name="CommandesList" component={CommandesScreen} />
+      <CommandesStack.Screen name="Facturation" component={FacturationScreen} />
+    </CommandesStack.Navigator>
+  );
+};
+
 // === NAVIGATEUR DES SERVEURS (BOTTOM TABS) ===
 const ServeurNavigator = () => {
   return (
     <ServeurTabs.Navigator
       screenOptions={({ route }) => ({
-        headerShown: true,
+        headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: any = 'restaurant';
           if (route.name === 'TablePlan') iconName = focused ? 'grid' : 'grid-outline';
@@ -45,11 +58,9 @@ const ServeurNavigator = () => {
         tabBarStyle: { paddingBottom: 5, height: 60 },
       })}
     >
-      <ServeurTabs.Screen name="TablePlan" component={TablePlanNavigator} options={{ title: 'Plan des Tables', headerShown: false }} />
-      <ServeurTabs.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu', headerShown: false }} />
-      <ServeurTabs.Screen name="Commandes" options={{ title: 'Commandes' }}>
-        {() => <ServeurScreenPlaceholder title="Liste des Commandes Actives" />}
-      </ServeurTabs.Screen>
+      <ServeurTabs.Screen name="TablePlan" component={TablePlanNavigator} options={{ title: 'Plan des Tables' }} />
+      <ServeurTabs.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
+      <ServeurTabs.Screen name="Commandes" component={CommandesNavigator} options={{ title: 'Commandes' }} />
     </ServeurTabs.Navigator>
   );
 };
@@ -68,7 +79,7 @@ export const AppNavigator = () => {
       ) : (
         <AppStack.Navigator screenOptions={{ headerShown: false }}>
            {user?.role === 'cuisinier' ? (
-            <AppStack.Screen name="CuisineApp" component={CuisinierScreen} />
+            <AppStack.Screen name="CuisineApp" component={KitchenScreen} />
           ) : (
             <AppStack.Screen name="ServeurApp" component={ServeurNavigator} />
           )}
