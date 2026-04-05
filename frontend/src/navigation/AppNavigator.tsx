@@ -84,9 +84,7 @@ const ServeurNavigator = () => {
         }}
       />
       <ServeurTabs.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu', headerShown: false }} />
-      <ServeurTabs.Screen name="Commandes" options={{ title: 'Commandes' }}>
-        {() => <ServeurScreenPlaceholder title="Liste des Commandes Actives" />}
-      </ServeurTabs.Screen>
+      <ServeurTabs.Screen name="Commandes" component={CommandesNavigator} options={{ title: 'Commandes' }} />
     </ServeurTabs.Navigator>
   );
 };

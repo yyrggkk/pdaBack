@@ -14,8 +14,7 @@ export const axiosClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-  },
-  timeout: 15000,
+  }
 });
 
 // Intercepteur pour injecter automatiquement le token Sanctum dans nos requêtes futures
