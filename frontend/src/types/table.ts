@@ -8,6 +8,7 @@ export interface TableSummary {
   statut: TableStatus;
   nombreDePlaces: number;
   couverts: number;
+  couvertsVerrouilles: boolean;
 }
 
 export interface OrderLine {

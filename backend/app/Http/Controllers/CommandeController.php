@@ -24,6 +24,19 @@ class CommandeController extends Controller
 
         try {
             $commande = DB::transaction(function () use ($validated) {
+                $table = TableRestaurant::query()
+                    ->lockForUpdate()
+                    ->findOrFail($validated['table_id']);
+
+                $hasExistingCommandes = $table->commandes()->exists();
+                $fixedCouverts = $hasExistingCommandes
+                    ? $table->nombreDePlaces
+                    : $validated['couverts'];
+
+                if (!$hasExistingCommandes) {
+                    $table->nombreDePlaces = $fixedCouverts;
+                }
+
                 // Get all article IDs from the request
                 $articleIds = collect($validated['lignes'])->pluck('article_id')->toArray();
 
@@ -55,7 +68,7 @@ class CommandeController extends Controller
                 $commande = Commande::create([
                     'idTable' => $validated['table_id'],
                     'idUtilisateur' => $validated['utilisateur_id'],
-                    'couverts' => $validated['couverts'],
+                    'couverts' => $fixedCouverts,
                     'montantTotal' => $total,
                     'statut' => 'en_cuisine',
                     'dateCommande' => now(),
@@ -73,8 +86,9 @@ class CommandeController extends Controller
                 }
 
                 // Update table status to "occupe"
-                TableRestaurant::where('idTable', $validated['table_id'])
-                    ->update(['statut' => 'occupe']);
+                $table->statut = 'occupe';
+                $table->couverts = $fixedCouverts;
+                $table->save();
 
                 // Reload commande with relationships
                 return $commande->fresh(['lignesCommande.article', 'tableRestaurant']);
@@ -101,7 +115,6 @@ class CommandeController extends Controller
             ];
 
             return response()->json($response, 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la création de la commande',

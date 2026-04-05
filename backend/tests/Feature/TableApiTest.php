@@ -143,4 +143,106 @@ class TableApiTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonPath('message', 'Le nombre de couverts ne peut pas depasser le nombre de places.');
     }
+
+    public function test_patch_couverts_only_auto_sets_status_to_occupee_when_incrementing_from_libre(): void
+    {
+        $table = TableRestaurant::factory()->create([
+            'statut' => 'libre',
+            'nombreDePlaces' => 4,
+            'couverts' => 0,
+        ]);
+
+        $response = $this->patchJson('/api/tables/' . $table->idTable, [
+            'couverts' => 2,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('statut', 'occupee');
+        $response->assertJsonPath('couverts', 2);
+
+        $this->assertDatabaseHas('table_restaurants', [
+            'idTable' => $table->idTable,
+            'statut' => 'occupe',
+            'couverts' => 2,
+        ]);
+    }
+
+    public function test_patch_couverts_only_auto_sets_status_to_libre_when_decrementing_to_zero(): void
+    {
+        $table = TableRestaurant::factory()->create([
+            'statut' => 'occupe',
+            'nombreDePlaces' => 4,
+            'couverts' => 1,
+        ]);
+
+        $response = $this->patchJson('/api/tables/' . $table->idTable, [
+            'couverts' => 0,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('statut', 'libre');
+        $response->assertJsonPath('couverts', 0);
+
+        $this->assertDatabaseHas('table_restaurants', [
+            'idTable' => $table->idTable,
+            'statut' => 'libre',
+            'couverts' => 0,
+        ]);
+    }
+
+    public function test_show_marks_couverts_as_locked_when_table_has_at_least_one_commande(): void
+    {
+        $table = TableRestaurant::factory()->create([
+            'statut' => 'occupe',
+            'nombreDePlaces' => 3,
+            'couverts' => 3,
+        ]);
+
+        $serveur = Utilisateur::factory()->create([
+            'role' => 'serveur',
+            'statut' => 'actif',
+        ]);
+
+        Commande::factory()->create([
+            'idTable' => $table->idTable,
+            'idUtilisateur' => $serveur->idUtilisateur,
+            'statut' => 'en_preparation',
+            'montantTotal' => 120,
+            'couverts' => 3,
+        ]);
+
+        $response = $this->getJson('/api/tables/' . $table->idTable);
+
+        $response->assertOk();
+        $response->assertJsonPath('couvertsVerrouilles', true);
+    }
+
+    public function test_patch_rejects_couverts_update_when_table_has_existing_commande(): void
+    {
+        $table = TableRestaurant::factory()->create([
+            'statut' => 'occupe',
+            'nombreDePlaces' => 3,
+            'couverts' => 3,
+        ]);
+
+        $serveur = Utilisateur::factory()->create([
+            'role' => 'serveur',
+            'statut' => 'actif',
+        ]);
+
+        Commande::factory()->create([
+            'idTable' => $table->idTable,
+            'idUtilisateur' => $serveur->idUtilisateur,
+            'statut' => 'en_preparation',
+            'montantTotal' => 80,
+            'couverts' => 3,
+        ]);
+
+        $response = $this->patchJson('/api/tables/' . $table->idTable, [
+            'couverts' => 2,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('message', 'Le nombre de couverts est verrouille pour cette table.');
+    }
 }

@@ -42,7 +42,7 @@ export default function TableDetailsScreen({ navigation, route }: any) {
   }, [loadDetails]);
 
   const updateCouverts = async (nextValue: number) => {
-    if (!table || nextValue < 0 || nextValue > table.nombreDePlaces) return;
+    if (!table || table.couvertsVerrouilles || nextValue < 0 || nextValue > table.nombreDePlaces) return;
 
     setSaving(true);
     try {
@@ -62,10 +62,14 @@ export default function TableDetailsScreen({ navigation, route }: any) {
     const target = nextStatus(table.statut);
     setSaving(true);
     try {
-      const updated = await updateTableStatus(table.id, {
-        statut: target,
-        couverts: target === "libre" ? 0 : Math.max(couverts, 1),
-      });
+      const payload = table.couvertsVerrouilles
+        ? { statut: target as TableStatus }
+        : {
+            statut: target as TableStatus,
+            couverts: target === "libre" ? 0 : Math.max(couverts, 1),
+          };
+
+      const updated = await updateTableStatus(table.id, payload);
       setTable((prev) => (prev ? { ...prev, ...updated } : prev));
       setCouverts(updated.couverts);
     } finally {
@@ -84,6 +88,8 @@ export default function TableDetailsScreen({ navigation, route }: any) {
 
   const statusColor =
     table.statut === "libre" ? "#006e2f" : table.statut === "occupee" ? "#f59e0b" : "#da3437";
+  const couvertsLocked = table.couvertsVerrouilles;
+  const personnesFixes = table.nombreDePlaces;
   const canRequestInvoice = Boolean(
     table.commandeEnCours && String(table.commandeEnCours.statut).toLowerCase() === "servie"
   );
@@ -119,7 +125,7 @@ export default function TableDetailsScreen({ navigation, route }: any) {
 
             <View className="mt-4 flex-row items-center justify-between rounded-2xl bg-[#f0f3ff] p-2">
               <TouchableOpacity
-                disabled={saving || couverts <= 0}
+                disabled={saving || couverts <= 0 || couvertsLocked}
                 onPress={() => updateCouverts(couverts - 1)}
                 className="h-14 w-14 items-center justify-center rounded-xl bg-white"
               >
@@ -129,22 +135,30 @@ export default function TableDetailsScreen({ navigation, route }: any) {
               <Text className="text-4xl font-extrabold text-slate-900">{couverts}</Text>
 
               <TouchableOpacity
-                disabled={saving || couverts >= table.nombreDePlaces}
+                disabled={saving || couverts >= table.nombreDePlaces || couvertsLocked}
                 onPress={() => updateCouverts(couverts + 1)}
                 className="h-14 w-14 items-center justify-center rounded-xl bg-white"
               >
                 <Text className="text-2xl font-bold text-slate-700">+</Text>
               </TouchableOpacity>
             </View>
+
+            {couvertsLocked && (
+              <Text className="mt-3 text-xs font-semibold uppercase tracking-[1px] text-slate-500">
+                Couverts verrouilles apres la premiere commande
+              </Text>
+            )}
           </View>
         </View>
 
         <View className="mt-4 rounded-2xl border border-[#e5e8f4] bg-[#f0f3ff] p-4">
           <Text className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-            Capacite maximale
+            Capacite
           </Text>
           <Text className="mt-1 text-base font-bold text-slate-900">
-            Jusqu a {table.nombreDePlaces} personnes
+            {couvertsLocked
+              ? `${personnesFixes} ${personnesFixes > 1 ? "Personnes" : "Personne"}`
+              : `Jusqu a ${table.nombreDePlaces} personnes`}
           </Text>
         </View>
 

@@ -14,6 +14,7 @@ class TableController extends Controller
     public function index(): JsonResponse
     {
         $tables = TableRestaurant::query()
+            ->withCount('commandes')
             ->orderBy('numeroTable')
             ->get()
             ->map(fn(TableRestaurant $table) => $this->formatTable($table));
@@ -23,7 +24,9 @@ class TableController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $table = TableRestaurant::query()->findOrFail($id);
+        $table = TableRestaurant::query()
+            ->withCount('commandes')
+            ->findOrFail($id);
 
         $commandeEnCours = $table->commandes()
             ->whereIn('statut', ['en_cours', 'valide', 'en_preparation', 'servie'])
@@ -68,28 +71,19 @@ class TableController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $statusProvided = array_key_exists('statut', $validated);
+        $couvertsProvided = array_key_exists('couverts', $validated);
+        $couvertsLocked = $table->commandes()->exists();
+
+        if ($couvertsLocked && $couvertsProvided) {
+            return response()->json([
+                'message' => 'Le nombre de couverts est verrouille pour cette table.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $newStatut = $validated['statut'] ?? null;
         if ($newStatut === 'occupee') {
             $newStatut = 'occupe';
-        }
-
-        if ($newStatut !== null && $newStatut !== $table->statut) {
-            $allowedTransitions = [
-                'libre' => 'occupe',
-                'occupe' => 'servie',
-                'servie' => 'libre',
-            ];
-
-            $expectedNext = $allowedTransitions[$table->statut] ?? null;
-
-            if ($expectedNext !== $newStatut) {
-                return response()->json([
-                    'message' => 'Transition de statut invalide.',
-                    'expectedNext' => $expectedNext === 'occupe' ? 'occupee' : $expectedNext,
-                    'current' => $this->statusForApi($table->statut),
-                    'received' => $this->statusForApi($newStatut),
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
         }
 
         $newCouverts = $validated['couverts'] ?? $table->couverts;
@@ -100,6 +94,35 @@ class TableController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        // If only couverts are updated, infer a coherent status for +/- actions from the UI.
+        if (!$statusProvided && $couvertsProvided && $table->statut !== 'indisponible') {
+            if ($newCouverts === 0) {
+                $newStatut = 'libre';
+            } elseif ($newCouverts > 0 && $table->statut === 'libre') {
+                $newStatut = 'occupe';
+            }
+        }
+
+        if ($newStatut !== null && $newStatut !== $table->statut) {
+            $allowedTransitions = [
+                'libre' => 'occupe',
+                'occupe' => 'servie',
+                'servie' => 'libre',
+            ];
+
+            $expectedNext = $allowedTransitions[$table->statut] ?? null;
+            $autoStatusFromCouverts = !$statusProvided && $couvertsProvided;
+
+            if (!$autoStatusFromCouverts && $expectedNext !== $newStatut) {
+                return response()->json([
+                    'message' => 'Transition de statut invalide.',
+                    'expectedNext' => $expectedNext === 'occupe' ? 'occupee' : $expectedNext,
+                    'current' => $this->statusForApi($table->statut),
+                    'received' => $this->statusForApi($newStatut),
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+
         $nextStatus = $newStatut ?? $table->statut;
 
         if ($nextStatus === 'libre' && $newCouverts > 0) {
@@ -108,14 +131,14 @@ class TableController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if (array_key_exists('statut', $validated)) {
+        if ($newStatut !== null) {
             $table->statut = $newStatut;
             if ($newStatut === 'libre') {
                 $newCouverts = 0;
             }
         }
 
-        if (array_key_exists('couverts', $validated) || ($newStatut === 'libre')) {
+        if ($couvertsProvided || ($newStatut !== null)) {
             $table->couverts = $newCouverts;
         }
 
@@ -126,12 +149,18 @@ class TableController extends Controller
 
     private function formatTable(TableRestaurant $table): array
     {
+        $commandesCount = $table->getAttribute('commandes_count');
+        $couvertsLocked = $commandesCount !== null
+            ? ((int) $commandesCount > 0)
+            : $table->commandes()->exists();
+
         return [
             'id' => $table->idTable,
             'numero' => $table->numeroTable,
             'statut' => $this->statusForApi($table->statut),
             'nombreDePlaces' => $table->nombreDePlaces,
             'couverts' => $table->couverts,
+            'couvertsVerrouilles' => $couvertsLocked,
         ];
     }
 
