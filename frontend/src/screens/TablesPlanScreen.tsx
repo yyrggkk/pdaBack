@@ -7,14 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { fetchAllTables } from "../services/tableService";
 import { TABLE_STATUS_LABELS } from "../theme/tableTheme";
 import { TableFilter, TableSummary } from "../types/table";
 import { TableCard } from "../components/TableCard";
-import { RootStackParamList } from "../../App";
-
-type Props = NativeStackScreenProps<RootStackParamList, "TablesPlan">;
 
 const FILTERS: { key: TableFilter; label: string }[] = [
   { key: "toutes", label: "Toutes" },
@@ -23,7 +19,7 @@ const FILTERS: { key: TableFilter; label: string }[] = [
   { key: "servie", label: "Servies" },
 ];
 
-export function TablesPlanScreen({ navigation }: Props) {
+export default function TablesPlanScreen({ navigation }: any) {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

@@ -6,13 +6,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { getTableDetails, updateTableStatus } from "../services/tableService";
 import { TABLE_STATUS_LABELS } from "../theme/tableTheme";
 import { TableDetails, TableStatus } from "../types/table";
-import { RootStackParamList } from "../../App";
-
-type Props = NativeStackScreenProps<RootStackParamList, "TableDetails">;
 
 function nextStatus(current: TableStatus): TableStatus {
   if (current === "libre") return "occupee";
@@ -21,7 +17,7 @@ function nextStatus(current: TableStatus): TableStatus {
   return "libre";
 }
 
-export function TableDetailsScreen({ navigation, route }: Props) {
+export default function TableDetailsScreen({ navigation, route }: any) {
   const { tableId } = route.params;
   const [table, setTable] = useState<TableDetails | null>(null);
   const [couverts, setCouverts] = useState(0);
@@ -170,7 +166,7 @@ export function TableDetailsScreen({ navigation, route }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("Menu", { tableId: table.id })}
+          onPress={() => navigation.navigate("MenuFromTable", { tableId: table.id })}
           className="h-16 items-center justify-center rounded-2xl bg-[#006e2f]"
         >
           <Text className="text-base font-bold text-white">Commencer la commande</Text>
