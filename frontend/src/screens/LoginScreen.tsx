@@ -3,7 +3,7 @@ import { View, Text, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SoftInput } from '../components/SoftInput';
-import { PrimaryButton } from '../components/PrimaryButton';
+import PrimaryButton from '../components/PrimaryButton';
 import { useAuthStore } from '../store/authStore';
 import { axiosClient } from '../api/axiosClient';
 
@@ -61,9 +61,9 @@ export const LoginScreen = () => {
         {/* Bottom Actions */}
         <View className="mt-auto pt-8 flex items-center justify-end w-full">
           <PrimaryButton 
-            title="Ouvrir ma session" 
+            label="Ouvrir ma session" 
             onPress={handleLogin} 
-            isLoading={isLoading} 
+            loading={isLoading} 
           />
         </View>
       </View>
