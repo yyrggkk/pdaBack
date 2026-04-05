@@ -7,9 +7,10 @@ interface SoftInputProps {
   pin: string;
   setPin: (pin: string) => void;
   maxLength?: number;
+  compact?: boolean;
 }
 
-export const SoftInput: React.FC<SoftInputProps> = ({ pin, setPin, maxLength = 4 }) => {
+export const SoftInput: React.FC<SoftInputProps> = ({ pin, setPin, maxLength = 4, compact = false }) => {
 
   const handleKeyPress = (num: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -31,8 +32,8 @@ export const SoftInput: React.FC<SoftInputProps> = ({ pin, setPin, maxLength = 4
   return (
     <View className="w-full">
       {/* Affichage du PIN, calqué sur l'input du HTML */}
-      <View className="bg-surface-container-low w-full h-24 mb-12 rounded-xl justify-center items-center">
-        <Text className="text-4xl font-jakarta-bold tracking-[1.5rem] text-on-surface">
+      <View className={`bg-surface-container-low w-full ${compact ? 'h-20 mb-6' : 'h-24 mb-12'} rounded-xl justify-center items-center`}>
+        <Text className={`${compact ? 'text-3xl' : 'text-4xl'} font-jakarta-bold tracking-[1.5rem] text-on-surface`}>
           {pin.padEnd(maxLength, '•')}
         </Text>
       </View>
@@ -41,7 +42,7 @@ export const SoftInput: React.FC<SoftInputProps> = ({ pin, setPin, maxLength = 4
       <View className="flex-row flex-wrap justify-between w-full">
         {keys.map((key, index) => {
           if (key === '') {
-            return <View key={`empty-${index}`} className="w-[30%] h-20 mb-4" />;
+            return <View key={`empty-${index}`} className={`w-[30%] ${compact ? 'h-16 mb-3' : 'h-20 mb-4'}`} />;
           }
 
           if (key === 'delete') {
@@ -50,9 +51,9 @@ export const SoftInput: React.FC<SoftInputProps> = ({ pin, setPin, maxLength = 4
                 key="delete"
                 activeOpacity={0.7}
                 onPress={handleDelete}
-                className="w-[30%] h-20 mb-4 rounded-xl items-center justify-center bg-surface-container-low"
+                className={`w-[30%] ${compact ? 'h-16 mb-3' : 'h-20 mb-4'} rounded-xl items-center justify-center bg-surface-container-low`}
               >
-                <Ionicons name="backspace" size={24} color="#111c2d" style={{ opacity: 0.6 }} />
+                <Ionicons name="backspace" size={compact ? 20 : 24} color="#111c2d" style={{ opacity: 0.6 }} />
               </TouchableOpacity>
             );
           }
@@ -62,9 +63,9 @@ export const SoftInput: React.FC<SoftInputProps> = ({ pin, setPin, maxLength = 4
               key={key}
               activeOpacity={0.7}
               onPress={() => handleKeyPress(key)}
-              className="w-[30%] h-20 mb-4 rounded-xl items-center justify-center bg-surface-container-lowest"
+              className={`w-[30%] ${compact ? 'h-16 mb-3' : 'h-20 mb-4'} rounded-xl items-center justify-center bg-surface-container-lowest`}
             >
-              <Text className="text-3xl font-jakarta-bold text-on-surface">{key}</Text>
+              <Text className={`${compact ? 'text-2xl' : 'text-3xl'} font-jakarta-bold text-on-surface`}>{key}</Text>
             </TouchableOpacity>
           );
         })}

@@ -7,7 +7,7 @@ import {
   Pressable,
   StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArticleCard, CategoryTabs } from "../components";
 import { useCartStore } from "../stores";
 import { menuService } from "../services";
@@ -35,6 +35,8 @@ export default function MenuScreen({
   onNavigateToCart,
   onGoBack,
 }: MenuScreenProps) {
+  const insets = useSafeAreaInsets();
+
   // State
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
@@ -166,7 +168,7 @@ export default function MenuScreen({
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["top", "bottom"]}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         {/* Back Button */}
@@ -210,7 +212,7 @@ export default function MenuScreen({
         renderItem={renderArticle}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
         columnWrapperStyle={styles.columnWrapper}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -226,6 +228,7 @@ export default function MenuScreen({
           onPress={handleNavigateToCart}
           style={({ pressed }) => [
             styles.cartBar,
+            { bottom: 16 + insets.bottom },
             pressed && styles.cartBarPressed,
           ]}
         >
@@ -250,7 +253,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 8,
-    paddingBottom: 100, // Space for floating cart bar
   },
   columnWrapper: {
     justifyContent: "space-between",

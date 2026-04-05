@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTableDetails, updateTableStatus } from "../services/tableService";
 import { TABLE_STATUS_LABELS } from "../theme/tableTheme";
 import { TableDetails, TableStatus } from "../types/table";
@@ -19,6 +21,7 @@ function nextStatus(current: TableStatus): TableStatus {
 
 export default function TableDetailsScreen({ navigation, route }: any) {
   const { tableId } = route.params;
+  const insets = useSafeAreaInsets();
   const [table, setTable] = useState<TableDetails | null>(null);
   const [couverts, setCouverts] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -73,30 +76,34 @@ export default function TableDetailsScreen({ navigation, route }: any) {
 
   if (loading || !table) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#f9f9ff]">
+      <SafeAreaView className="flex-1 items-center justify-center bg-[#f9f9ff]" edges={["top", "bottom"]}>
         <ActivityIndicator size="large" color="#006e2f" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   const statusColor =
     table.statut === "libre" ? "#006e2f" : table.statut === "occupee" ? "#f59e0b" : "#da3437";
+  const canRequestInvoice = Boolean(
+    table.commandeEnCours && String(table.commandeEnCours.statut).toLowerCase() === "servie"
+  );
 
   return (
-    <View className="flex-1 bg-[#f9f9ff]">
-      <View className="flex-row items-center border-b border-slate-200 px-5 pb-4 pt-14">
+    <SafeAreaView className="flex-1 bg-[#f9f9ff]" edges={["top", "bottom"]}>
+      <View className="flex-row items-center border-b border-slate-200 px-5 pb-4 pt-2">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="h-10 w-10 items-center justify-center rounded-full bg-white"
+          style={{ marginTop: -2 }}
         >
-          <Text className="text-lg text-slate-800">{"<"}</Text>
+          <Ionicons name="chevron-back" size={22} color="#1e293b" />
         </TouchableOpacity>
         <Text className="ml-4 text-xl font-extrabold text-[#111c2d]">
           Table {String(table.numero).padStart(2, "0")}
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 180 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 200 + insets.bottom }}>
         <View className="mb-5 flex-row items-center gap-2">
           <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: statusColor }} />
           <Text className="text-xs font-bold uppercase tracking-[2px]" style={{ color: statusColor }}>
@@ -156,22 +163,27 @@ export default function TableDetailsScreen({ navigation, route }: any) {
         )}
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 rounded-t-[32px] border-t border-slate-200 bg-white px-5 pb-10 pt-4">
-        <TouchableOpacity
-          disabled={saving || table.statut === "indisponible"}
-          onPress={advanceStatus}
-          className="mb-3 h-12 items-center justify-center rounded-full bg-slate-100"
-        >
-          <Text className="font-semibold text-slate-700">Avancer le statut</Text>
-        </TouchableOpacity>
+      <View
+        className="absolute bottom-0 left-0 right-0 rounded-t-[32px] border-t border-slate-200 bg-white px-5 pt-4"
+        style={{ paddingBottom: 12 + insets.bottom }}
+      >
+        {canRequestInvoice && (
+          <TouchableOpacity
+            disabled={saving || table.statut === "indisponible"}
+            onPress={advanceStatus}
+            className="mb-3 h-12 items-center justify-center rounded-full bg-slate-100"
+          >
+            <Text className="font-semibold text-slate-700">Demander la facture</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           onPress={() => navigation.navigate("MenuFromTable", { tableId: table.id })}
           className="h-16 items-center justify-center rounded-2xl bg-[#006e2f]"
         >
-          <Text className="text-base font-bold text-white">Commencer la commande</Text>
+          <Text className="text-base font-bold text-white">Prendre commande</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

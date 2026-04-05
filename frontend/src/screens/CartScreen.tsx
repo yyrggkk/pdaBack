@@ -264,7 +264,7 @@ export default function CartScreen({
   // Empty cart state
   if (items.length === 0 && !isSubmitting) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-gray-50" edges={["top", "bottom"]}>
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
           <Pressable
@@ -302,7 +302,7 @@ export default function CartScreen({
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["top", "bottom"]}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <Pressable
