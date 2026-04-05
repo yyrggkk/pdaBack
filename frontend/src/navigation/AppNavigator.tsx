@@ -1,8 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 
 // === SCREENS ===
@@ -42,6 +43,8 @@ const CommandesNavigator = () => {
 
 // === NAVIGATEUR DES SERVEURS (BOTTOM TABS) ===
 const ServeurNavigator = () => {
+  const insets = useSafeAreaInsets();
+
   return (
     <ServeurTabs.Navigator
       screenOptions={({ route }) => ({
@@ -55,12 +58,35 @@ const ServeurNavigator = () => {
         },
         tabBarActiveTintColor: '#006e2f',
         tabBarInactiveTintColor: 'gray',
-        tabBarStyle: { paddingBottom: 5, height: 60 },
+        tabBarStyle: {
+          paddingBottom: 5 + insets.bottom,
+          height: 60 + insets.bottom,
+        },
       })}
     >
-      <ServeurTabs.Screen name="TablePlan" component={TablePlanNavigator} options={{ title: 'Plan des Tables' }} />
-      <ServeurTabs.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
-      <ServeurTabs.Screen name="Commandes" component={CommandesNavigator} options={{ title: 'Commandes' }} />
+      <ServeurTabs.Screen
+        name="TablePlan"
+        component={TablePlanNavigator}
+        options={({ route }) => {
+          const nestedRoute = getFocusedRouteNameFromRoute(route) ?? 'TablesPlanHome';
+          const hideTabBar = nestedRoute === 'TableDetails';
+
+          return {
+            title: 'Plan des Tables',
+            headerShown: false,
+            tabBarStyle: hideTabBar
+              ? { display: 'none' }
+              : {
+                  paddingBottom: 5 + insets.bottom,
+                  height: 60 + insets.bottom,
+                },
+          };
+        }}
+      />
+      <ServeurTabs.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu', headerShown: false }} />
+      <ServeurTabs.Screen name="Commandes" options={{ title: 'Commandes' }}>
+        {() => <ServeurScreenPlaceholder title="Liste des Commandes Actives" />}
+      </ServeurTabs.Screen>
     </ServeurTabs.Navigator>
   );
 };

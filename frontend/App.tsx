@@ -6,7 +6,7 @@ import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_700Bold } from '@
 import { WorkSans_400Regular, WorkSans_600SemiBold } from '@expo-google-fonts/work-sans';
 import { useAuthStore } from './src/store/authStore';
 import { AppNavigator } from './src/navigation/AppNavigator';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const { checkToken, isAuthenticated } = useAuthStore();
@@ -32,10 +32,10 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <View className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
         <AppNavigator />
         <StatusBar style="auto" />
-      </View>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }

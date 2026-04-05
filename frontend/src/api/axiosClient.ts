@@ -10,6 +10,7 @@ const baseURL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.10:8000/api
 
 export const axiosClient = axios.create({
   baseURL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

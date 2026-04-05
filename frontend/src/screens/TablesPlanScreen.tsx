@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchAllTables } from "../services/tableService";
 import { TABLE_STATUS_COLORS, TABLE_STATUS_LABELS } from "../theme/tableTheme";
 import { TableSummary } from "../types/table";
@@ -42,16 +43,15 @@ export default function TablesPlanScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#f9f9ff]">
+      <SafeAreaView className="flex-1 items-center justify-center bg-[#f9f9ff]" edges={["top", "bottom"]}>
         <ActivityIndicator size="large" color="#006e2f" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-[#f2f4fa] px-5 pt-5">
+    <SafeAreaView className="flex-1 bg-[#f2f4fa] px-5 pt-5" edges={["top", "bottom"]}>
       <Text className="text-5xl font-black tracking-tight text-[#111c2d]">Plan des Tables</Text>
-      <Text className="mt-1 text-[27px] font-medium text-slate-500">Gestion tactique en temps reel</Text>
 
       <View className="mt-4 flex-row flex-wrap gap-4">
         {(["libre", "occupee", "servie", "indisponible"] as const).map((status) => (
@@ -79,7 +79,7 @@ export default function TablesPlanScreen({ navigation }: any) {
         keyExtractor={(item) => item.id.toString()}
         numColumns={3}
         columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 18 }}
-        contentContainerStyle={{ paddingTop: 18, paddingBottom: 28 }}
+        contentContainerStyle={{ paddingTop: 18, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => (
           <TableCard
@@ -93,6 +93,6 @@ export default function TablesPlanScreen({ navigation }: any) {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
