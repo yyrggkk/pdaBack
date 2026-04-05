@@ -8,34 +8,28 @@ import {
   StyleSheet,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { ArticleCard, CategoryTabs } from "../components";
 import { useCartStore } from "../stores";
 import { menuService } from "../services";
 import { Category, Article } from "../types";
 
-// Placeholder icons - replace with your icon library (e.g., @expo/vector-icons)
-const ArrowLeftIcon = () => (
-  <Text className="text-2xl text-gray-800">←</Text>
-);
-const SearchIcon = () => (
-  <Text className="text-xl text-gray-800">🔍</Text>
-);
-const CartIcon = () => (
-  <Text className="text-lg">🛒</Text>
-);
-
 interface MenuScreenProps {
-  navigation?: any; // Replace with proper navigation type if using React Navigation
+  navigation?: any;
+  route?: any;
+  isOrderMode?: boolean;
   onNavigateToCart?: () => void;
   onGoBack?: () => void;
 }
 
 export default function MenuScreen({
   navigation,
-  onNavigateToCart,
+  route,
+  isOrderMode,
   onGoBack,
 }: MenuScreenProps) {
   const insets = useSafeAreaInsets();
+  const isOrderModeEnabled = Boolean(isOrderMode ?? route?.params?.isOrderMode);
 
   // State
   const [categories, setCategories] = useState<Category[]>([]);
@@ -44,14 +38,7 @@ export default function MenuScreen({
   const [error, setError] = useState<string | null>(null);
 
   // Cart store
-  const {
-    tableId,
-    addItem,
-    removeItem,
-    getItemCount,
-    getTotalPrice,
-    getItemQuantity,
-  } = useCartStore();
+  const { addItem, removeItem, getItemQuantity } = useCartStore();
 
   // Fetch menu on mount
   useEffect(() => {
@@ -86,12 +73,11 @@ export default function MenuScreen({
 
   // Category tabs data
   const categoryTabs = useMemo(() => {
-    return categories.map((c) => ({ id: c.id, nom: c.nom }));
+    return categories.map((c) => ({
+      id: c.id,
+      nom: c.nom === "Entrees Marocaines" ? "Entrées Marocaines" : c.nom,
+    }));
   }, [categories]);
-
-  // Cart computed values
-  const itemCount = getItemCount();
-  const totalPrice = getTotalPrice();
 
   // Handlers
   const handleAddItem = (article: Article) => {
@@ -115,14 +101,6 @@ export default function MenuScreen({
     }
   };
 
-  const handleNavigateToCart = () => {
-    if (onNavigateToCart) {
-      onNavigateToCart();
-    } else if (navigation?.navigate) {
-      navigation.navigate("Panier");
-    }
-  };
-
   // Render article item
   const renderArticle = ({ item }: { item: Article }) => (
     <ArticleCard
@@ -132,19 +110,20 @@ export default function MenuScreen({
       description={item.description ?? undefined}
       image_url={item.image_url ?? "https://via.placeholder.com/200"}
       disponibilite={item.disponibilite}
-      quantity={getItemQuantity(item.id)}
-      onAdd={() => handleAddItem(item)}
-      onRemove={() => handleRemoveItem(item.id)}
+      quantity={isOrderModeEnabled ? getItemQuantity(item.id) : 0}
+      onAdd={isOrderModeEnabled ? () => handleAddItem(item) : undefined}
+      onRemove={isOrderModeEnabled ? () => handleRemoveItem(item.id) : undefined}
+      showQuantityControls={isOrderModeEnabled}
     />
   );
 
   // Loading state
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
-        <View className="flex-1 items-center justify-center">
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1B7A4A" />
-          <Text className="mt-4 text-gray-600">Chargement du menu...</Text>
+          <Text style={styles.loadingText}>Chargement du menu...</Text>
         </View>
       </SafeAreaView>
     );
@@ -153,14 +132,11 @@ export default function MenuScreen({
   // Error state
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-red-500 text-center text-lg mb-4">{error}</Text>
-          <Pressable
-            onPress={fetchMenu}
-            className="bg-green-brand px-6 py-3 rounded-full"
-          >
-            <Text className="text-white font-semibold">Réessayer</Text>
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable onPress={fetchMenu} style={styles.retryButton}>
+            <Text style={styles.retryButtonText}>Réessayer</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -168,37 +144,39 @@ export default function MenuScreen({
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+      <View style={styles.header}>
         {/* Back Button */}
         <Pressable
           onPress={handleGoBack}
-          className="w-10 h-10 items-center justify-center"
-          style={({ pressed }) => [pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.pressed,
+          ]}
         >
-          <ArrowLeftIcon />
+          <Ionicons name="arrow-back" size={24} color="#111827" />
         </Pressable>
 
         {/* Title */}
-        <Text className="text-lg font-bold text-gray-900">
-          Table {tableId ?? "-"}
-        </Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Menu</Text>
+        </View>
 
         {/* Search Button */}
         <Pressable
-          onPress={() => {
-            // TODO: Implement search
-          }}
-          className="w-10 h-10 items-center justify-center"
-          style={({ pressed }) => [pressed && styles.pressed]}
+          onPress={() => {}}
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.pressed,
+          ]}
         >
-          <SearchIcon />
+          <Ionicons name="search" size={24} color="#111827" />
         </Pressable>
       </View>
 
       {/* Category Tabs */}
-      <View className="bg-white">
+      <View style={styles.tabsContainer}>
         <CategoryTabs
           categories={categoryTabs}
           activeId={activeCategory ?? 0}
@@ -212,74 +190,110 @@ export default function MenuScreen({
         renderItem={renderArticle}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: 20 + insets.bottom },
+        ]}
         columnWrapperStyle={styles.columnWrapper}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <Text className="text-gray-500">Aucun article dans cette catégorie</Text>
+          <View style={styles.emptyContainer}>
+            <Ionicons name="restaurant-outline" size={48} color="#9CA3AF" />
+            <Text style={styles.emptyText}>Aucun article dans cette catégorie</Text>
           </View>
         }
       />
-
-      {/* Floating Cart Bar */}
-      {itemCount > 0 && (
-        <Pressable
-          onPress={handleNavigateToCart}
-          style={({ pressed }) => [
-            styles.cartBar,
-            { bottom: 16 + insets.bottom },
-            pressed && styles.cartBarPressed,
-          ]}
-        >
-          <View className="flex-row items-center">
-            <CartIcon />
-            <Text className="text-white font-bold ml-2">
-              VOIR PANIER ({itemCount})
-            </Text>
-          </View>
-          <Text className="text-white font-bold">
-            {totalPrice.toFixed(2)} MAD
-          </Text>
-        </Pressable>
-      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  pressed: {
-    opacity: 0.7,
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
   },
-  listContent: {
-    padding: 8,
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  columnWrapper: {
-    justifyContent: "space-between",
+  loadingText: {
+    marginTop: 16,
+    color: "#6B7280",
+    fontSize: 16,
   },
-  cartBar: {
-    position: "absolute",
-    bottom: 24,
-    left: 16,
-    right: 16,
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    color: "#EF4444",
+    textAlign: "center",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  retryButton: {
     backgroundColor: "#1B7A4A",
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    shadowColor: "#1B7A4A",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
-  cartBarPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+  headerButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  tabsContainer: {
+    backgroundColor: "#FFFFFF",
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyText: {
+    color: "#9CA3AF",
+    marginTop: 12,
+    fontSize: 16,
+  },
+  pressed: {
+    opacity: 0.7,
+    backgroundColor: "#F3F4F6",
   },
 });

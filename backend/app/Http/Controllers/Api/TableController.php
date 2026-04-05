@@ -26,7 +26,7 @@ class TableController extends Controller
         $table = TableRestaurant::query()->findOrFail($id);
 
         $commandeEnCours = $table->commandes()
-            ->whereIn('statut', ['en_cours', 'valide', 'en_preparation', 'servie'])
+            ->whereIn('statut', ['en_cours', 'valide', 'en_preparation', 'en_cuisine', 'servie'])
             ->with(['lignesCommande.article'])
             ->orderByDesc('idCommande')
             ->first();

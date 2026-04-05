@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,7 +16,11 @@ return new class extends Migration
         });
 
         // Update the statut enum to include 'en_cuisine'
-        DB::statement("ALTER TABLE commandes MODIFY COLUMN statut ENUM('en_cours', 'valide', 'en_preparation', 'en_cuisine', 'servie', 'annule', 'paye') DEFAULT 'en_cours'");
+        Schema::table('commandes', function (Blueprint $table) {
+            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'en_cuisine', 'servie', 'annule', 'paye'])
+                ->default('en_cours')
+                ->change();
+        });
     }
 
     /**
@@ -26,7 +29,11 @@ return new class extends Migration
     public function down(): void
     {
         // Revert statut enum
-        DB::statement("ALTER TABLE commandes MODIFY COLUMN statut ENUM('en_cours', 'valide', 'en_preparation', 'servie', 'annule', 'paye') DEFAULT 'en_cours'");
+        Schema::table('commandes', function (Blueprint $table) {
+            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'servie', 'annule', 'paye'])
+                ->default('en_cours')
+                ->change();
+        });
 
         Schema::table('commandes', function (Blueprint $table) {
             $table->dropColumn('couverts');

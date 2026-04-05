@@ -1,6 +1,5 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
 
 // L'URL de ton backend. 
 // On tente d'utiliser la variable du fichier .env d'abord.

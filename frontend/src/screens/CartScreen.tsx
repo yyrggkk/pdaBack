@@ -144,7 +144,7 @@ export default function CartScreen({
                 onOrderSuccess();
               } else if (navigation?.navigate) {
                 // Navigate to tables screen or home
-                navigation.navigate("Tables");
+                navigation.navigate("TablesPlanHome");
               } else {
                 handleGoBack();
               }
