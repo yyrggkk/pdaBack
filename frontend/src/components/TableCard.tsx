@@ -1,32 +1,23 @@
 import { useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
-import { TABLE_STATUS_LABELS } from "../theme/tableTheme";
+import { TABLE_STATUS_COLORS } from "../theme/tableTheme";
 import { TableSummary } from "../types/table";
-import { StatusRibbon } from "./StatusRibbon";
 
 interface TableCardProps {
   table: TableSummary;
   onPress: (table: TableSummary) => void;
 }
 
-function renderChairs(count: number) {
-  const chairs = [];
-  for (let i = 0; i < count; i += 1) {
-    chairs.push(
-      <View key={`chair-${i}`} className="h-1.5 w-1.5 rounded-sm bg-black/25" />
-    );
-  }
-  return chairs;
-}
-
 export function TableCard({ table, onPress }: TableCardProps) {
   const scale = useRef(new Animated.Value(1)).current;
+  const borderColor = TABLE_STATUS_COLORS[table.statut];
+  const faded = table.statut === "indisponible";
 
   const handlePressIn = () => {
     Animated.spring(scale, {
-      toValue: 0.96,
+      toValue: 0.94,
       useNativeDriver: true,
-      speed: 40,
+      speed: 38,
       bounciness: 3,
     }).start();
   };
@@ -45,32 +36,19 @@ export function TableCard({ table, onPress }: TableCardProps) {
       onPress={() => onPress(table)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      className="w-[47%]"
+      disabled={faded}
+      className="w-[31%] items-center"
     >
-      <Animated.View
-        style={{ transform: [{ scale }] }}
-        className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-4"
-      >
-        <StatusRibbon statut={table.statut} />
-
-        <View className="ml-2 gap-1">
-          <Text className="font-bold text-slate-900">Table {String(table.numero).padStart(2, "0")}</Text>
-          <Text className="text-xs text-slate-500">{TABLE_STATUS_LABELS[table.statut]}</Text>
-        </View>
-
-        <View className="mt-3 flex-row items-end justify-between">
-          <View>
-            <Text className="text-[11px] uppercase tracking-widest text-slate-400">Couverts</Text>
-            <Text className="text-2xl font-extrabold text-slate-900">{table.couverts}</Text>
+      <Animated.View style={{ transform: [{ scale }], opacity: faded ? 0.4 : 1 }}>
+        <View className="h-[78px] w-[96px] items-center justify-center">
+          <View
+            style={{ borderColor }}
+            className="h-[50px] w-[78px] items-center justify-center rounded-md border-[2.5px] bg-white"
+          >
+            <Text className="text-[30px] font-black tracking-tight text-[#111c2d]">
+              {String(table.numero).padStart(2, "0")}
+            </Text>
           </View>
-          <View className="items-end">
-            <Text className="text-[11px] uppercase tracking-widest text-slate-400">Capacite</Text>
-            <Text className="text-sm font-semibold text-slate-700">{table.nombreDePlaces}</Text>
-          </View>
-        </View>
-
-        <View className="mt-3 flex-row items-center justify-between">
-          <View className="flex-row flex-wrap gap-1">{renderChairs(Math.min(table.nombreDePlaces, 8))}</View>
         </View>
       </Animated.View>
     </Pressable>

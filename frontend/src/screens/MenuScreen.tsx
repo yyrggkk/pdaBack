@@ -13,31 +13,37 @@ import { useCartStore } from "../stores";
 import { menuService } from "../services";
 import { Category, Article } from "../types";
 
-const ArrowLeftIcon = () => <Text className="text-2xl text-gray-800">←</Text>;
-const SearchIcon = () => <Text className="text-xl text-gray-800">🔍</Text>;
-const CartIcon = () => <Text className="text-lg">🛒</Text>;
+// Placeholder icons - replace with your icon library (e.g., @expo/vector-icons)
+const ArrowLeftIcon = () => (
+  <Text className="text-2xl text-gray-800">←</Text>
+);
+const SearchIcon = () => (
+  <Text className="text-xl text-gray-800">🔍</Text>
+);
+const CartIcon = () => (
+  <Text className="text-lg">🛒</Text>
+);
 
 interface MenuScreenProps {
-  navigation?: any;
-  route?: { params?: { tableId?: number } };
+  navigation?: any; // Replace with proper navigation type if using React Navigation
   onNavigateToCart?: () => void;
   onGoBack?: () => void;
 }
 
 export default function MenuScreen({
   navigation,
-  route,
   onNavigateToCart,
   onGoBack,
 }: MenuScreenProps) {
+  // State
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Cart store
   const {
     tableId,
-    setTableId,
     addItem,
     removeItem,
     getItemCount,
@@ -45,12 +51,7 @@ export default function MenuScreen({
     getItemQuantity,
   } = useCartStore();
 
-  useEffect(() => {
-    if (route?.params?.tableId) {
-      setTableId(route.params.tableId);
-    }
-  }, [route?.params?.tableId, setTableId]);
-
+  // Fetch menu on mount
   useEffect(() => {
     fetchMenu();
   }, []);
@@ -61,31 +62,36 @@ export default function MenuScreen({
       setError(null);
       const data = await menuService.getMenu();
       setCategories(data.categories);
-
+      
+      // Set first category as active by default
       if (data.categories.length > 0) {
         setActiveCategory(data.categories[0].id);
       }
     } catch (err) {
       console.error("Failed to fetch menu:", err);
-      setError("Impossible de charger le menu. Veuillez reessayer.");
+      setError("Impossible de charger le menu. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Filter articles by selected category
   const filteredArticles = useMemo(() => {
     if (!activeCategory) return [];
     const category = categories.find((c) => c.id === activeCategory);
     return category?.articles ?? [];
   }, [categories, activeCategory]);
 
+  // Category tabs data
   const categoryTabs = useMemo(() => {
     return categories.map((c) => ({ id: c.id, nom: c.nom }));
   }, [categories]);
 
+  // Cart computed values
   const itemCount = getItemCount();
   const totalPrice = getTotalPrice();
 
+  // Handlers
   const handleAddItem = (article: Article) => {
     addItem({
       article_id: article.id,
@@ -115,6 +121,7 @@ export default function MenuScreen({
     }
   };
 
+  // Render article item
   const renderArticle = ({ item }: { item: Article }) => (
     <ArticleCard
       id={item.id}
@@ -129,6 +136,7 @@ export default function MenuScreen({
     />
   );
 
+  // Loading state
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
@@ -140,13 +148,17 @@ export default function MenuScreen({
     );
   }
 
+  // Error state
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="mb-4 text-center text-lg text-red-500">{error}</Text>
-          <Pressable onPress={fetchMenu} className="rounded-full bg-green-brand px-6 py-3">
-            <Text className="font-semibold text-white">Reessayer</Text>
+          <Text className="text-red-500 text-center text-lg mb-4">{error}</Text>
+          <Pressable
+            onPress={fetchMenu}
+            className="bg-green-brand px-6 py-3 rounded-full"
+          >
+            <Text className="text-white font-semibold">Réessayer</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -155,32 +167,44 @@ export default function MenuScreen({
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
-      <View className="flex-row items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+        {/* Back Button */}
         <Pressable
           onPress={handleGoBack}
-          className="h-10 w-10 items-center justify-center"
+          className="w-10 h-10 items-center justify-center"
           style={({ pressed }) => [pressed && styles.pressed]}
         >
           <ArrowLeftIcon />
         </Pressable>
 
-        <Text className="text-lg font-bold text-gray-900">Table {tableId ?? "-"}</Text>
+        {/* Title */}
+        <Text className="text-lg font-bold text-gray-900">
+          Table {tableId ?? "-"}
+        </Text>
 
+        {/* Search Button */}
         <Pressable
           onPress={() => {
-            // TODO: search
+            // TODO: Implement search
           }}
-          className="h-10 w-10 items-center justify-center"
+          className="w-10 h-10 items-center justify-center"
           style={({ pressed }) => [pressed && styles.pressed]}
         >
           <SearchIcon />
         </Pressable>
       </View>
 
+      {/* Category Tabs */}
       <View className="bg-white">
-        <CategoryTabs categories={categoryTabs} activeId={activeCategory ?? 0} onSelect={setActiveCategory} />
+        <CategoryTabs
+          categories={categoryTabs}
+          activeId={activeCategory ?? 0}
+          onSelect={setActiveCategory}
+        />
       </View>
 
+      {/* Articles Grid */}
       <FlatList
         data={filteredArticles}
         renderItem={renderArticle}
@@ -191,21 +215,29 @@ export default function MenuScreen({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <Text className="text-gray-500">Aucun article dans cette categorie</Text>
+            <Text className="text-gray-500">Aucun article dans cette catégorie</Text>
           </View>
         }
       />
 
+      {/* Floating Cart Bar */}
       {itemCount > 0 && (
         <Pressable
           onPress={handleNavigateToCart}
-          style={({ pressed }) => [styles.cartBar, pressed && styles.cartBarPressed]}
+          style={({ pressed }) => [
+            styles.cartBar,
+            pressed && styles.cartBarPressed,
+          ]}
         >
           <View className="flex-row items-center">
             <CartIcon />
-            <Text className="ml-2 font-bold text-white">VOIR PANIER ({itemCount})</Text>
+            <Text className="text-white font-bold ml-2">
+              VOIR PANIER ({itemCount})
+            </Text>
           </View>
-          <Text className="font-bold text-white">{totalPrice.toFixed(2)} MAD</Text>
+          <Text className="text-white font-bold">
+            {totalPrice.toFixed(2)} MAD
+          </Text>
         </Pressable>
       )}
     </SafeAreaView>
@@ -218,7 +250,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 8,
-    paddingBottom: 100,
+    paddingBottom: 100, // Space for floating cart bar
   },
   columnWrapper: {
     justifyContent: "space-between",
