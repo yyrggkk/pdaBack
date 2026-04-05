@@ -1,5 +1,9 @@
-import React from "react";
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Image, Pressable, StyleSheet, Dimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+const { width } = Dimensions.get("window");
+const CARD_WIDTH = (width - 36) / 2;
 
 interface ArticleCardProps {
   id: number;
@@ -8,9 +12,10 @@ interface ArticleCardProps {
   description?: string;
   image_url: string;
   disponibilite: boolean;
-  quantity: number;
-  onAdd: () => void;
-  onRemove: () => void;
+  quantity?: number;
+  onAdd?: () => void;
+  onRemove?: () => void;
+  showQuantityControls?: boolean;
 }
 
 export default function ArticleCard({
@@ -20,102 +25,68 @@ export default function ArticleCard({
   description,
   image_url,
   disponibilite,
-  quantity,
+  quantity = 0,
   onAdd,
   onRemove,
+  showQuantityControls = false,
 }: ArticleCardProps) {
   const isSoldOut = !disponibilite;
+  const [imageError, setImageError] = useState(false);
 
   return (
-    <View className="flex-1 m-1.5 bg-white rounded-xl overflow-hidden" style={styles.card}>
+    <View style={styles.card}>
       {/* Image Container */}
-      <View className="relative aspect-square">
+      <View style={styles.imageContainer}>
         <Image
-          source={{ uri: image_url }}
-          className="w-full h-full"
+          source={{ 
+            uri: imageError 
+              ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop" 
+              : image_url 
+          }}
           style={styles.image}
           resizeMode="cover"
+          onError={() => setImageError(true)}
         />
         
         {/* Sold Out Overlay */}
         {isSoldOut && (
-          <View className="absolute inset-0 bg-black/60 items-center justify-center">
-            <View className="bg-red-600 px-3 py-1.5 rounded">
-              <Text className="text-white font-bold text-sm">SOLD OUT</Text>
+          <View style={styles.soldOutOverlay}>
+            <View style={styles.soldOutBadge}>
+              <Text style={styles.soldOutText}>ÉPUISÉ</Text>
             </View>
-          </View>
-        )}
-
-        {/* Quantity Badge */}
-        {quantity > 0 && !isSoldOut && (
-          <View className="absolute top-2 right-2 bg-green-brand w-7 h-7 rounded-full items-center justify-center">
-            <Text className="text-white font-bold text-sm">{quantity}</Text>
           </View>
         )}
       </View>
 
       {/* Content */}
-      <View className="p-3">
-        {/* Product Name */}
-        <Text
-          className="font-bold text-gray-900 text-sm leading-tight"
-          numberOfLines={2}
-        >
+      <View style={styles.content}>
+        <Text style={styles.productName} numberOfLines={1}>
           {nom}
         </Text>
+        
+        <Text style={styles.price}>{prix.toFixed(2).replace(".", ",")} MAD</Text>
 
-        {/* Price */}
-        <Text className="text-green-brand font-semibold text-base mt-1">
-          {prix.toFixed(2)} MAD
-        </Text>
-
-        {/* Quantity Controls */}
-        <View className="flex-row items-center justify-between mt-3">
-          {/* Minus Button */}
-          <Pressable
-            onPress={onRemove}
-            disabled={isSoldOut || quantity === 0}
-            className={`w-9 h-9 rounded-full items-center justify-center ${
-              isSoldOut || quantity === 0 ? "bg-gray-200" : "bg-gray-300"
-            }`}
-            style={({ pressed }) => [
-              pressed && !isSoldOut && quantity > 0 && styles.pressed,
-            ]}
-          >
-            <Text
-              className={`text-xl font-bold ${
-                isSoldOut || quantity === 0 ? "text-gray-400" : "text-gray-700"
-              }`}
-            >
-              −
-            </Text>
-          </Pressable>
-
-          {/* Quantity Display */}
-          <Text className="text-lg font-bold text-gray-900 min-w-[32px] text-center">
-            {quantity}
-          </Text>
-
-          {/* Plus Button */}
-          <Pressable
-            onPress={onAdd}
-            disabled={isSoldOut}
-            className={`w-9 h-9 rounded-full items-center justify-center ${
-              isSoldOut ? "bg-gray-300" : "bg-green-brand"
-            }`}
-            style={({ pressed }) => [
-              pressed && !isSoldOut && styles.pressed,
-            ]}
-          >
-            <Text
-              className={`text-xl font-bold ${
-                isSoldOut ? "text-gray-400" : "text-white"
-              }`}
-            >
-              +
-            </Text>
-          </Pressable>
-        </View>
+        {showQuantityControls && !isSoldOut && (
+          <View style={styles.controlsRow}>
+            {quantity > 0 ? (
+              <>
+                <Pressable onPress={onRemove} style={styles.controlBtn}>
+                  <Ionicons name="remove" size={18} color="#1B7A4A" />
+                </Pressable>
+                <View style={styles.quantityValue}>
+                  <Text style={styles.quantity}>{quantity}</Text>
+                </View>
+                <Pressable onPress={onAdd} style={styles.controlBtn}>
+                  <Ionicons name="add" size={18} color="#1B7A4A" />
+                </Pressable>
+              </>
+            ) : (
+              <Pressable onPress={onAdd} style={styles.addBtn}>
+                <Ionicons name="add" size={18} color="#FFFFFF" />
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -123,21 +94,92 @@ export default function ArticleCard({
 
 const styles = StyleSheet.create({
   card: {
+    width: CARD_WIDTH,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 12,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  imageContainer: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#F3F4F6",
+    position: "relative",
   },
   image: {
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    width: "100%",
+    height: "100%",
   },
-  pressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.95 }],
+  soldOutOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  soldOutBadge: {
+    backgroundColor: "#DC2626",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  soldOutText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  content: {
+    padding: 10,
+  },
+  productName: {
+    fontWeight: "600",
+    color: "#1A1A1A",
+    fontSize: 15,
+    marginBottom: 6,
+  },
+  price: {
+    color: "#2E7D32",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  controlsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  controlBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#1B7A4A",
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1B7A4A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quantityValue: {
+    height: 36,
+    minWidth: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quantity: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
   },
 });

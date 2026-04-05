@@ -36,16 +36,13 @@ export default function PrimaryButton({
       ]}
     >
       {isDisabled ? (
-        <View
-          style={styles.disabledBackground}
-          className="h-14 w-full flex-row items-center justify-center rounded-full"
-        >
+        <View style={styles.disabledBackground}>
           {loading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
             <>
-              {icon && <View className="mr-2">{icon}</View>}
-              <Text className="text-white font-bold text-base">{label}</Text>
+              {icon && <View style={styles.iconWrapper}>{icon}</View>}
+              <Text style={styles.label}>{label}</Text>
             </>
           )}
         </View>
@@ -55,10 +52,9 @@ export default function PrimaryButton({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.gradient}
-          className="h-14 w-full flex-row items-center justify-center rounded-full"
         >
-          {icon && <View className="mr-2">{icon}</View>}
-          <Text className="text-white font-bold text-base">{label}</Text>
+          {icon && <View style={styles.iconWrapper}>{icon}</View>}
+          <Text style={styles.label}>{label}</Text>
         </LinearGradient>
       )}
     </Pressable>
@@ -81,6 +77,10 @@ const styles = StyleSheet.create({
   gradient: {
     height: 56,
     borderRadius: 9999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
   pressed: {
     transform: [{ scale: 0.98 }],
@@ -90,9 +90,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#9E9E9E",
     height: 56,
     borderRadius: 9999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
   disabledOpacity: {
     opacity: 0.6,
     shadowOpacity: 0,
+  },
+  iconWrapper: {
+    marginRight: 8,
+  },
+  label: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 16,
+    textAlign: "center",
   },
 });

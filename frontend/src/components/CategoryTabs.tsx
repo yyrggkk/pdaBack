@@ -1,9 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import {
   ScrollView,
   Pressable,
   Text,
-  Animated,
   StyleSheet,
   View,
 } from "react-native";
@@ -14,120 +13,69 @@ interface CategoryTabsProps {
   onSelect: (id: number) => void;
 }
 
-interface TabProps {
-  id: number;
-  nom: string;
-  isActive: boolean;
-  onPress: () => void;
-}
-
-function Tab({ id, nom, isActive, onPress }: TabProps) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const bgAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.timing(bgAnim, {
-      toValue: isActive ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isActive, bgAnim]);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const backgroundColor = bgAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#F3F4F6", "#1B7A4A"],
-  });
-
-  const textColor = bgAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#374151", "#FFFFFF"],
-  });
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-    >
-      <Animated.View
-        style={[
-          styles.tab,
-          {
-            backgroundColor,
-            transform: [{ scale: scaleAnim }],
-          },
-        ]}
-      >
-        <Animated.Text
-          style={[
-            styles.tabText,
-            {
-              color: textColor,
-            },
-          ]}
-        >
-          {nom}
-        </Animated.Text>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
 export default function CategoryTabs({
   categories,
   activeId,
   onSelect,
 }: CategoryTabsProps) {
-  const scrollViewRef = useRef<ScrollView>(null);
-
   return (
-    <View className="py-2">
+    <View style={styles.container}>
       <ScrollView
-        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {categories.map((category) => (
-          <Tab
-            key={category.id}
-            id={category.id}
-            nom={category.nom}
-            isActive={category.id === activeId}
-            onPress={() => onSelect(category.id)}
-          />
-        ))}
+        {categories.map((category) => {
+          const isActive = category.id === activeId;
+          return (
+            <Pressable
+              key={category.id}
+              onPress={() => onSelect(category.id)}
+              style={[
+                styles.tab,
+                isActive && styles.activeTab,
+              ]}
+            >
+              <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+                {category.nom}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10,
+  },
   scrollContent: {
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: 12,
+    gap: 8,
   },
   tab: {
-    paddingVertical: 8,
+    height: 40,
     paddingHorizontal: 16,
-    borderRadius: 25,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#2E7D32",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeTab: {
+    backgroundColor: "#2E7D32",
   },
   tabText: {
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: 13,
+    color: "#2E7D32",
+  },
+  activeTabText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
 });

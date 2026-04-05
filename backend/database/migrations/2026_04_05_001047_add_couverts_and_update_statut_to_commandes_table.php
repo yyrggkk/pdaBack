@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         // Update the statut enum to include 'en_cuisine'
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE commandes MODIFY COLUMN statut ENUM('en_cours', 'valide', 'en_preparation', 'en_cuisine', 'servie', 'annule', 'paye') DEFAULT 'en_cours'");
-        }
+        Schema::table('commandes', function (Blueprint $table) {
+            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'en_cuisine', 'servie', 'annule', 'paye'])
+                ->default('en_cours')
+                ->change();
+        });
     }
 
     /**
@@ -22,8 +25,14 @@ return new class extends Migration
     public function down(): void
     {
         // Revert statut enum
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE commandes MODIFY COLUMN statut ENUM('en_cours', 'valide', 'en_preparation', 'servie', 'annule', 'paye') DEFAULT 'en_cours'");
-        }
+        Schema::table('commandes', function (Blueprint $table) {
+            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'servie', 'annule', 'paye'])
+                ->default('en_cours')
+                ->change();
+        });
+
+        Schema::table('commandes', function (Blueprint $table) {
+            $table->dropColumn('couverts');
+        });
     }
 };

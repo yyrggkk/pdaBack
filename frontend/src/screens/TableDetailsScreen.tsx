@@ -9,6 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTableDetails, updateTableStatus } from "../services/tableService";
+import { useCartStore } from "../stores/cartStore";
 import { TABLE_STATUS_LABELS } from "../theme/tableTheme";
 import { TableDetails, TableStatus } from "../types/table";
 
@@ -22,6 +23,7 @@ function nextStatus(current: TableStatus): TableStatus {
 export default function TableDetailsScreen({ navigation, route }: any) {
   const { tableId } = route.params;
   const insets = useSafeAreaInsets();
+  const { setTableId, setCouverts: setCartCouverts } = useCartStore();
   const [table, setTable] = useState<TableDetails | null>(null);
   const [couverts, setCouverts] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -192,7 +194,11 @@ export default function TableDetailsScreen({ navigation, route }: any) {
         )}
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("MenuFromTable", { tableId: table.id })}
+          onPress={() => {
+            setTableId((table as any).idTable ?? table.id);
+            setCartCouverts(table.couverts);
+            navigation.navigate("MenuFromTable", { tableId: table.id, isOrderMode: true });
+          }}
           className="h-16 items-center justify-center rounded-2xl bg-[#006e2f]"
         >
           <Text className="text-base font-bold text-white">Prendre commande</Text>

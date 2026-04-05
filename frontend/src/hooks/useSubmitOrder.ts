@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { AxiosError } from "axios";
 import { useCartStore } from "../stores";
+import { useAuthStore } from "../store/authStore";
 import {
   orderService,
   CreateOrderResponse,
@@ -19,9 +20,6 @@ interface UseSubmitOrderReturn {
   clearError: () => void;
 }
 
-// Default user ID - in production, this should come from auth context
-const DEFAULT_USER_ID = 1;
-
 /**
  * Custom hook for submitting orders to the kitchen
  */
@@ -34,6 +32,7 @@ export function useSubmitOrder(
   const [error, setError] = useState<string | null>(null);
 
   const { items, tableId, couverts, clearCart } = useCartStore();
+  const user = useAuthStore((state) => state.user);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -104,7 +103,7 @@ export function useSubmitOrder(
       const payload = {
         table_id: tableId,
         couverts: couverts,
-        utilisateur_id: DEFAULT_USER_ID,
+        utilisateur_id: user!.id,
         lignes: items.map((item) => ({
           article_id: item.article_id,
           quantite: item.quantite,
@@ -132,6 +131,7 @@ export function useSubmitOrder(
     items,
     tableId,
     couverts,
+    user,
     clearCart,
     onSuccess,
     onError,

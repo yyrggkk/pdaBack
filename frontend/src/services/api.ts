@@ -1,18 +1,8 @@
-import axios from "axios";
 import { MenuResponse } from "../types";
 import { CommandesResponse, CommandeItem, FactureResponse, ModePaiement } from "../types/commande";
+import { axiosClient } from "../api/axiosClient";
 
-// Configure base URL - update this to your Laravel backend URL
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000/api";
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  timeout: 15000, // 15 seconds timeout
-});
+const apiClient = axiosClient;
 
 export const menuService = {
   /**
