@@ -123,22 +123,11 @@ class TableController extends Controller
             }
         }
 
-        $nextStatus = $newStatut ?? $table->statut;
-
-        if ($nextStatus === 'libre' && $newCouverts > 0) {
-            return response()->json([
-                'message' => 'Une table libre doit avoir 0 couvert.',
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
         if ($newStatut !== null) {
             $table->statut = $newStatut;
-            if ($newStatut === 'libre') {
-                $newCouverts = 0;
-            }
         }
 
-        if ($couvertsProvided || ($newStatut !== null)) {
+        if ($couvertsProvided) {
             $table->couverts = $newCouverts;
         }
 

@@ -24,8 +24,8 @@ class TableRestaurant extends Model
     ];
 
     protected $casts = [
-        'couverts' => 'integer',
         'nombreDePlaces' => 'integer',
+        'couverts' => 'integer',
     ];
 
     public function commandes(): HasMany

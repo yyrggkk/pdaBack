@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   Text,
@@ -8,6 +9,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { axiosClient } from "../api/axiosClient";
+import { useAuthStore } from "../store/authStore";
 import { fetchAllTables } from "../services/tableService";
 import { TABLE_STATUS_COLORS, TABLE_STATUS_LABELS } from "../theme/tableTheme";
 import { TableSummary } from "../types/table";
@@ -18,6 +22,7 @@ export default function TablesPlanScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { logout } = useAuthStore();
 
   const loadTables = useCallback(async () => {
     try {
@@ -41,6 +46,25 @@ export default function TablesPlanScreen({ navigation }: any) {
     loadTables();
   }, [loadTables]);
 
+  const handleLogout = useCallback(() => {
+    Alert.alert("Deconnexion", "Voulez-vous vous deconnecter ?", [
+      { text: "Annuler", style: "cancel" },
+      {
+        text: "Se deconnecter",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await axiosClient.post("/logout");
+          } catch {
+            // Always continue with local logout even if API call fails.
+          } finally {
+            await logout();
+          }
+        },
+      },
+    ]);
+  }, [logout]);
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-[#f9f9ff]" edges={["top", "bottom"]}>
@@ -51,7 +75,17 @@ export default function TablesPlanScreen({ navigation }: any) {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f2f4fa] px-5 pt-5" edges={["top", "bottom"]}>
-      <Text className="text-5xl font-black tracking-tight text-[#111c2d]">Plan des Tables</Text>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-5xl font-black tracking-tight text-[#111c2d]">Plan des Tables</Text>
+        <TouchableOpacity
+          onPress={handleLogout}
+          className="h-11 w-11 items-center justify-center rounded-full bg-white"
+          accessibilityRole="button"
+          accessibilityLabel="Se deconnecter"
+        >
+          <Ionicons name="log-out-outline" size={22} color="#dc2626" />
+        </TouchableOpacity>
+      </View>
 
       <View className="mt-4 flex-row flex-wrap gap-4">
         {(["libre", "occupee", "servie", "indisponible"] as const).map((status) => (

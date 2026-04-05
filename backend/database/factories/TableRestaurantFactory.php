@@ -19,10 +19,16 @@ class TableRestaurantFactory extends Factory
      */
     public function definition(): array
     {
+        $nombreDePlaces = $this->faker->randomElement([2, 2, 4, 4, 6, 8]);
+        $statut = $this->faker->randomElement(['libre', 'libre', 'occupe', 'servie', 'indisponible']);
+
         return [
             'numeroTable' => $this->faker->unique()->numberBetween(1, 200),
-            'nombreDePlaces' => $this->faker->randomElement([2, 2, 4, 4, 6, 8]),
-            'statut' => $this->faker->randomElement(['libre', 'libre', 'occupe', 'servie', 'indisponible']),
+            'nombreDePlaces' => $nombreDePlaces,
+            'statut' => $statut,
+            'couverts' => in_array($statut, ['occupe', 'servie'], true)
+                ? $this->faker->numberBetween(1, $nombreDePlaces)
+                : 0,
         ];
     }
 }

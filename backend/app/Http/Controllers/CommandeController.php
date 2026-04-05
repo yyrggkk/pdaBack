@@ -8,6 +8,7 @@ use App\Models\Commande;
 use App\Models\LigneCommande;
 use App\Models\TableRestaurant;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -35,11 +36,13 @@ class CommandeController extends Controller
         $commandes = $query->get();
 
         $response = $commandes->map(function ($commande) {
+            $table = $commande->tableRestaurant;
+
             return [
                 'id' => $commande->idCommande,
                 'table_id' => $commande->idTable,
-                'table_numero' => $commande->tableRestaurant->numeroTable ?? null,
-                'couverts' => $commande->couverts,
+                'table_numero' => $table->numeroTable ?? null,
+                'couverts' => $table->nombreDePlaces ?? null,
                 'total' => (float) $commande->montantTotal,
                 'statut' => $commande->statut,
                 'date_commande' => $commande->dateCommande ? $commande->dateCommande->toIso8601String() : null,
@@ -147,11 +150,17 @@ class CommandeController extends Controller
 
                 $hasExistingCommandes = $table->commandes()->exists();
                 $fixedCouverts = $hasExistingCommandes
-                    ? $table->nombreDePlaces
+                    ? $table->couverts
                     : $validated['couverts'];
 
+                if (!$hasExistingCommandes && $fixedCouverts > $table->nombreDePlaces) {
+                    throw new HttpResponseException(response()->json([
+                        'message' => 'Le nombre de couverts ne peut pas depasser le nombre de places.',
+                    ], 422));
+                }
+
                 if (!$hasExistingCommandes) {
-                    $table->nombreDePlaces = $fixedCouverts;
+                    $table->couverts = $fixedCouverts;
                 }
 
                 // Get all article IDs from the request
@@ -185,7 +194,6 @@ class CommandeController extends Controller
                 $commande = Commande::create([
                     'idTable' => $validated['table_id'],
                     'idUtilisateur' => $validated['utilisateur_id'],
-                    'couverts' => $fixedCouverts,
                     'montantTotal' => $total,
                     'statut' => 'en_cuisine',
                     'dateCommande' => now(),
@@ -204,7 +212,6 @@ class CommandeController extends Controller
 
                 // Update table status to "occupe"
                 $table->statut = 'occupe';
-                $table->couverts = $fixedCouverts;
                 $table->save();
 
                 // Reload commande with relationships
@@ -215,7 +222,7 @@ class CommandeController extends Controller
             $response = [
                 'id' => $commande->idCommande,
                 'table_id' => $commande->idTable,
-                'couverts' => $commande->couverts,
+                'couverts' => $commande->tableRestaurant?->couverts,
                 'total' => (float) $commande->montantTotal,
                 'statut' => $commande->statut,
                 'lignes' => $commande->lignesCommande->map(function ($ligne) {
@@ -232,6 +239,8 @@ class CommandeController extends Controller
             ];
 
             return response()->json($response, 201);
+        } catch (HttpResponseException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la création de la commande',

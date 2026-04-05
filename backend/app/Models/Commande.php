@@ -23,7 +23,6 @@ class Commande extends Model
         'dateCommande',
         'statut',
         'montantTotal',
-        'couverts',
         'idTable',
         'idUtilisateur',
     ];

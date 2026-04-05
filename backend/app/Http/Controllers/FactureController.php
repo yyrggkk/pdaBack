@@ -117,7 +117,6 @@ class FactureController extends Controller
                     }),
                 ],
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la création de la facture.',
@@ -152,7 +151,7 @@ class FactureController extends Controller
             'commande' => [
                 'id' => $facture->commande->idCommande,
                 'table_numero' => $facture->commande->tableRestaurant->numeroTable ?? null,
-                'couverts' => $facture->commande->couverts,
+                'couverts' => $facture->commande->tableRestaurant->couverts ?? null,
                 'statut' => $facture->commande->statut,
                 'date_commande' => $facture->commande->dateCommande->toIso8601String(),
                 'lignes' => $facture->commande->lignesCommande->map(function ($ligne) {

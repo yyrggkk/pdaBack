@@ -125,17 +125,11 @@ class CommandeSeeder extends Seeder
                 continue;
             }
 
-            $couverts = match ($statutTable) {
-                'occupe', 'servie' => fake()->numberBetween(1, $table->nombreDePlaces),
-                default => 0,
-            };
-
             TableRestaurant::query()
                 ->where('idTable', $etat->idTable)
                 ->where('statut', '!=', 'indisponible')
                 ->update([
                     'statut' => $statutTable,
-                    'couverts' => $couverts,
                 ]);
         }
     }

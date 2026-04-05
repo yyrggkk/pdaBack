@@ -208,7 +208,6 @@ class TableApiTest extends TestCase
             'idUtilisateur' => $serveur->idUtilisateur,
             'statut' => 'en_preparation',
             'montantTotal' => 120,
-            'couverts' => 3,
         ]);
 
         $response = $this->getJson('/api/tables/' . $table->idTable);
@@ -235,7 +234,6 @@ class TableApiTest extends TestCase
             'idUtilisateur' => $serveur->idUtilisateur,
             'statut' => 'en_preparation',
             'montantTotal' => 80,
-            'couverts' => 3,
         ]);
 
         $response = $this->patchJson('/api/tables/' . $table->idTable, [
