@@ -26,11 +26,13 @@ class TableRestaurantSeeder extends Seeder
                 'numeroTable' => $numero,
                 'nombreDePlaces' => $places,
                 'statut' => 'libre',
+                'couverts' => 0,
             ];
         }
 
         // Une table indisponible pour maintenance.
         $tables[16]['statut'] = 'indisponible';
+        $tables[16]['couverts'] = 0;
 
         foreach ($tables as $table) {
             TableRestaurant::query()->updateOrCreate(

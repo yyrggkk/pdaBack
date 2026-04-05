@@ -96,7 +96,7 @@ class CommandeSeeder extends Seeder
 
                 Facture::factory()->create([
                     'idCommande' => $commande->idCommande,
-                    'numeroFacture' => sprintf('FAC-%s-%04d', now()->format('Ym'), $i),
+                    'numeroFacture' => sprintf('FAC-%s-%06d', now()->format('Ym'), $commande->idCommande),
                     'dateFacture' => fake()->dateTimeBetween($commande->dateCommande, 'now'),
                     'montantHT' => $montantHT,
                     'montantTVA' => $montantTVA,
@@ -120,10 +120,23 @@ class CommandeSeeder extends Seeder
                 default => 'libre',
             };
 
+            $table = TableRestaurant::query()->find($etat->idTable);
+            if (! $table || $table->statut === 'indisponible') {
+                continue;
+            }
+
+            $couverts = match ($statutTable) {
+                'occupe', 'servie' => fake()->numberBetween(1, $table->nombreDePlaces),
+                default => 0,
+            };
+
             TableRestaurant::query()
                 ->where('idTable', $etat->idTable)
                 ->where('statut', '!=', 'indisponible')
-                ->update(['statut' => $statutTable]);
+                ->update([
+                    'statut' => $statutTable,
+                    'couverts' => $couverts,
+                ]);
         }
     }
 }
