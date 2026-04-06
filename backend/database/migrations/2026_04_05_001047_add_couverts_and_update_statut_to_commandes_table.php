@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Update the statut enum to include 'en_cuisine'
+        // Keep statut values aligned with current app flow across drivers.
         Schema::table('commandes', function (Blueprint $table) {
-            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'en_cuisine', 'servie', 'annule', 'paye'])
+            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'en_cuisine', 'prete', 'servie', 'annule', 'paye', 'facturee'])
                 ->default('en_cours')
                 ->change();
         });

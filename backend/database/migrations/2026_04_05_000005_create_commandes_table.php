@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('commandes', function (Blueprint $table) {
             $table->increments('idCommande');
             $table->dateTime('dateCommande')->useCurrent();
-            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'servie', 'annule', 'paye'])->default('en_cours');
+            $table->enum('statut', ['en_cours', 'valide', 'en_preparation', 'en_cuisine', 'prete', 'servie', 'annule', 'paye', 'facturee'])->default('en_cours');
             $table->decimal('montantTotal', 10, 2)->default(0.00);
             $table->unsignedInteger('idTable');
             $table->unsignedInteger('idUtilisateur');

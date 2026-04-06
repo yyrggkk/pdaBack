@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { createCommande, fetchTables, getCurrentUserId } from "../../../services/posApi";
 
 type CartItem = {
   id: string;
@@ -71,7 +72,7 @@ function parseCartItems(rawCart: string): CartItem[] {
 export default function TableCartScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const params = useLocalSearchParams<{ tableId?: string; cart?: string | string[] }>();
+  const params = useLocalSearchParams<{ tableId?: string; cart?: string | string[]; covers?: string; openedAt?: string; status?: string }>();
 
   const [jakartaLoaded] = useJakartaFonts({
     PlusJakartaSans_700Bold,
@@ -84,8 +85,12 @@ export default function TableCartScreen() {
   });
 
   const tableId = params.tableId ?? "12";
+  const covers = Number(params.covers ?? 1);
+  const openedAt = params.openedAt;
+  const sourceStatus = params.status;
   const initialItems = useMemo(() => parseCartItems(getParamString(params.cart)), [params.cart]);
   const [items, setItems] = useState<CartItem[]>(initialItems);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const uiScale = Math.max(0.72, Math.min(width / 430, 1));
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
@@ -121,26 +126,74 @@ export default function TableCartScreen() {
       params: {
         tableId,
         cart: JSON.stringify(items),
+        covers: String(covers),
+        openedAt: openedAt ?? "",
+        status: sourceStatus ?? "free",
       },
     });
   };
 
   const cancelOrder = () => {
     setItems([]);
-  };
-
-  const sendToKitchen = () => {
-    if (items.length === 0) {
-      return;
-    }
-
     router.replace({
       pathname: "/table/[tableId]",
       params: {
         tableId,
-        status: "occupied",
+        status: sourceStatus ?? "free",
+        openedAt: openedAt ?? "",
+        covers: String(Math.max(1, covers)),
       },
     });
+  };
+
+  const sendToKitchen = async () => {
+    if (items.length === 0 || isSubmitting) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const userId = getCurrentUserId();
+      const tableNumero = Number(tableId);
+      if (!userId || Number.isNaN(tableNumero)) {
+        return;
+      }
+
+      const tables = await fetchTables();
+      const table = tables.find((entry) => entry.numero === tableNumero);
+      if (!table) {
+        return;
+      }
+
+      await createCommande({
+        table_id: table.id,
+        couverts: Math.max(1, covers),
+        utilisateur_id: userId,
+        lignes: items.map((item) => ({
+          article_id: Number(item.id),
+          quantite: item.quantity,
+        })),
+      });
+
+      const nowLabel = new Date().toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const effectiveOpenedAt = sourceStatus === "occupied" && openedAt ? openedAt : nowLabel;
+
+      router.replace({
+        pathname: "/table/[tableId]",
+        params: {
+          tableId,
+          status: "occupied",
+          openedAt: effectiveOpenedAt,
+          covers: String(Math.max(1, covers)),
+        },
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!jakartaLoaded || !workSansLoaded) {
@@ -152,12 +205,7 @@ export default function TableCartScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.iconButton, pressed && styles.scaleDown]}>
-            <MaterialCommunityIcons name="arrow-left" size={Math.round(34 * uiScale)} color="#07813a" />
-          </Pressable>
-          <Text style={[styles.headerTitle, { fontSize: Math.round(22 * uiScale) }]}>{`Table ${tableId}`}</Text>
-        </View>
+        <Text style={[styles.headerTitle, { fontSize: Math.round(22 * uiScale) }]}>{`Table ${tableId}`}</Text>
       </View>
 
       <ScrollView
@@ -254,17 +302,19 @@ export default function TableCartScreen() {
         </Pressable>
 
         <Pressable
-          disabled={items.length === 0}
+          disabled={items.length === 0 || isSubmitting}
           onPress={sendToKitchen}
           style={({ pressed }) => [
             styles.footerButton,
             styles.sendButton,
-            items.length === 0 && styles.actionDisabled,
-            pressed && items.length > 0 && styles.scaleDown,
+            (items.length === 0 || isSubmitting) && styles.actionDisabled,
+            pressed && items.length > 0 && !isSubmitting && styles.scaleDown,
           ]}
         >
           <MaterialCommunityIcons name="send" size={Math.round(34 * uiScale)} color="#ffffff" />
-          <Text style={[styles.footerButtonText, { fontSize: Math.round(22 * uiScale) }]}>Valider la Commande</Text>
+          <Text style={[styles.footerButtonText, { fontSize: Math.round(22 * uiScale) }]}> 
+            {isSubmitting ? "Validation..." : "Valider la Commande"}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -289,18 +339,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f7f8fb",
     borderBottomWidth: 1,
     borderBottomColor: "#dfe5ef",
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "PlusJakartaSans_800ExtraBold",

@@ -12,9 +12,10 @@ import {
 } from "@expo-google-fonts/work-sans";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import BottomNavBar from "../components/BottomNavBar";
+import { fetchCommandes, updateCommandeStatus } from "../services/posApi";
 
 type OrderStatus = "ready" | "kitchen" | "served";
 type FilterKey = "all" | "ready" | "kitchen" | "served";
@@ -31,73 +32,6 @@ type OrderItem = {
   timingText: string;
   status: OrderStatus;
 };
-
-const ORDERS: OrderItem[] = [
-  {
-    id: "2145",
-    tableNumber: "12",
-    commandNumber: "Cmd #2145",
-    articleText: "3 articles",
-    timingText: "Pret depuis 2 min",
-    status: "ready",
-  },
-  {
-    id: "2146",
-    tableNumber: "04",
-    commandNumber: "Cmd #2146",
-    articleText: "4 articles",
-    timingText: "En cours depuis 12 min",
-    status: "kitchen",
-  },
-  {
-    id: "2140",
-    tableNumber: "08",
-    commandNumber: "Cmd #2140",
-    articleText: "Service termine",
-    timingText: "Livre a 13:12",
-    status: "served",
-  },
-  {
-    id: "2147",
-    tableNumber: "02",
-    commandNumber: "Cmd #2147",
-    articleText: "2 articles",
-    timingText: "Pret depuis 1 min",
-    status: "ready",
-  },
-  {
-    id: "2148",
-    tableNumber: "15",
-    commandNumber: "Cmd #2148",
-    articleText: "5 articles",
-    timingText: "En cours depuis 8 min",
-    status: "kitchen",
-  },
-  {
-    id: "2135",
-    tableNumber: "03",
-    commandNumber: "Cmd #2135",
-    articleText: "Service termine",
-    timingText: "Livre a 12:49",
-    status: "served",
-  },
-  {
-    id: "2149",
-    tableNumber: "21",
-    commandNumber: "Cmd #2149",
-    articleText: "3 articles",
-    timingText: "En cours depuis 4 min",
-    status: "kitchen",
-  },
-  {
-    id: "2150",
-    tableNumber: "05",
-    commandNumber: "Cmd #2150",
-    articleText: "2 articles",
-    timingText: "En cours depuis 2 min",
-    status: "kitchen",
-  },
-];
 
 const STATUS_STYLES = {
   ready: {
@@ -135,6 +69,8 @@ const STATUS_STYLES = {
 export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps = {}) {
   const { width, height } = useWindowDimensions();
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [servingOrderId, setServingOrderId] = useState<string | null>(null);
 
   const [jakartaLoaded] = useJakartaFonts({
     PlusJakartaSans_700Bold,
@@ -149,14 +85,69 @@ export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps =
   const uiScale = Math.max(0.72, Math.min(width / 430, 1));
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
 
-  const filteredOrders = useMemo(() => {
-    if (filter === "all") return ORDERS;
-    return ORDERS.filter((item) => item.status === filter);
-  }, [filter]);
+  const loadCommandes = async () => {
+    try {
+      const commandes = await fetchCommandes();
 
-  const readyCount = ORDERS.filter((item) => item.status === "ready").length;
-  const kitchenCount = ORDERS.filter((item) => item.status === "kitchen").length;
-  const servedCount = ORDERS.filter((item) => item.status === "served").length;
+      const mapped: OrderItem[] = commandes.map((commande) => {
+        let status: OrderStatus = "kitchen";
+
+        if (commande.statut === "prete") {
+          status = "ready";
+        } else if (commande.statut === "servie" || commande.statut === "facturee") {
+          status = "served";
+        }
+
+        const articleCount = commande.lignes.reduce((sum, ligne) => sum + ligne.quantite, 0);
+
+        return {
+          id: String(commande.id),
+          tableNumber: String(commande.table_numero ?? "00").padStart(2, "0"),
+          commandNumber: `Cmd #${commande.id}`,
+          articleText: status === "served" ? "Service termine" : `${articleCount} articles`,
+          timingText: status === "served" ? "Commande servie" : "En cours",
+          status,
+        };
+      });
+
+      setOrders(mapped);
+    } catch {
+      setOrders([]);
+    }
+  };
+
+  useEffect(() => {
+    loadCommandes();
+  }, []);
+
+  const markOrderServed = async (orderId: string) => {
+    if (servingOrderId || !orderId) {
+      return;
+    }
+
+    setServingOrderId(orderId);
+
+    try {
+      const numericId = Number(orderId);
+      if (Number.isNaN(numericId)) {
+        return;
+      }
+
+      await updateCommandeStatus(numericId, "servie");
+      await loadCommandes();
+    } finally {
+      setServingOrderId(null);
+    }
+  };
+
+  const filteredOrders = useMemo(() => {
+    if (filter === "all") return orders;
+    return orders.filter((item) => item.status === filter);
+  }, [filter, orders]);
+
+  const readyCount = orders.filter((item) => item.status === "ready").length;
+  const kitchenCount = orders.filter((item) => item.status === "kitchen").length;
+  const servedCount = orders.filter((item) => item.status === "served").length;
 
   if (!jakartaLoaded || !workSansLoaded) {
     return <View style={styles.loadingScreen} />;
@@ -179,7 +170,7 @@ export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps =
           style={styles.filtersWrap}
         >
           <FilterChip
-            label={`Toutes (${ORDERS.length})`}
+            label={`Toutes (${orders.length})`}
             active={filter === "all"}
             activeBg="#0d1d39"
             activeText="#ffffff"
@@ -225,7 +216,13 @@ export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps =
       >
         <View style={styles.cardsWrap}>
           {filteredOrders.map((order) => (
-            <OrderCard key={order.id} order={order} uiScale={uiScale} />
+            <OrderCard
+              key={order.id}
+              order={order}
+              uiScale={uiScale}
+              isServing={servingOrderId === order.id}
+              onMarkServed={markOrderServed}
+            />
           ))}
         </View>
       </ScrollView>
@@ -269,9 +266,11 @@ function FilterChip({ label, active, activeBg, activeText, dotColor, onPress }: 
 type OrderCardProps = {
   order: OrderItem;
   uiScale: number;
+  isServing: boolean;
+  onMarkServed: (orderId: string) => void;
 };
 
-function OrderCard({ order, uiScale }: OrderCardProps) {
+function OrderCard({ order, uiScale, isServing, onMarkServed }: OrderCardProps) {
   const statusStyle = STATUS_STYLES[order.status];
   const isServed = order.status === "served";
 
@@ -318,9 +317,17 @@ function OrderCard({ order, uiScale }: OrderCardProps) {
         </View>
 
         {order.status === "ready" ? (
-          <Pressable style={({ pressed }) => [styles.validateButtonWrap, pressed && styles.scaleDown]}>
+          <Pressable
+            disabled={isServing}
+            onPress={() => onMarkServed(order.id)}
+            style={({ pressed }) => [
+              styles.validateButtonWrap,
+              isServing && styles.validateButtonWrapDisabled,
+              pressed && !isServing && styles.scaleDown,
+            ]}
+          >
             <LinearGradient
-              colors={["#00883d", "#1fc85f"]}
+              colors={isServing ? ["#9aa3b1", "#c0c7d2"] : ["#00883d", "#1fc85f"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.validateButton}
@@ -503,6 +510,10 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 7,
+  },
+  validateButtonWrapDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
   validateButton: {
     width: 92,

@@ -13,8 +13,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { fetchCommandes } from "../../../services/posApi";
 
 type PaymentMethod = "cash" | "card";
 
@@ -25,17 +26,19 @@ type InvoiceLine = {
   amount: number;
 };
 
-const INVOICE_LINES: InvoiceLine[] = [
-  { id: "1", quantity: 2, title: "Entrecote Grillee", amount: 52 },
-  { id: "2", quantity: 1, title: "Bordeaux Chateau Margaux", amount: 85 },
-  { id: "3", quantity: 2, title: "Cafe Gourmand", amount: 18 },
-];
+type InvoiceAccumulator = {
+  quantity: number;
+  amount: number;
+};
 
 export default function TableFactureScreen() {
   const router = useRouter();
   const { tableId } = useLocalSearchParams<{ tableId?: string }>();
   const { width, height } = useWindowDimensions();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [invoiceLines, setInvoiceLines] = useState<InvoiceLine[]>([]);
+  const [invoiceRef, setInvoiceRef] = useState("#INV-00000");
+  const [totalTtc, setTotalTtc] = useState(0);
 
   const [jakartaLoaded] = useJakartaFonts({
     PlusJakartaSans_700Bold,
@@ -50,9 +53,71 @@ export default function TableFactureScreen() {
   const uiScale = Math.max(0.72, Math.min(width / 430, 1));
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
 
-  const subtotal = useMemo(() => 135.2, []);
-  const vat = useMemo(() => 19.8, []);
-  const total = useMemo(() => subtotal + vat, [subtotal, vat]);
+  useEffect(() => {
+    const loadFactureData = async () => {
+      try {
+        const tableNumero = Number(tableId);
+        if (Number.isNaN(tableNumero)) {
+          setInvoiceLines([]);
+          setInvoiceRef("#INV-00000");
+          setTotalTtc(0);
+          return;
+        }
+
+        const commandes = await fetchCommandes();
+        const tableCommandes = commandes
+          .filter((commande) => commande.table_numero === tableNumero)
+          .sort((a, b) => (new Date(b.date_commande ?? 0).getTime() - new Date(a.date_commande ?? 0).getTime()));
+
+        const factureCommandes = tableCommandes.filter((commande) => commande.statut !== "annule");
+
+        if (factureCommandes.length === 0) {
+          setInvoiceLines([]);
+          setInvoiceRef("#INV-00000");
+          setTotalTtc(0);
+          return;
+        }
+
+        const linesByArticle = factureCommandes.reduce<Record<string, InvoiceAccumulator>>((acc, commande) => {
+          for (const ligne of commande.lignes) {
+            const key = ligne.article_nom;
+            const current = acc[key] ?? { quantity: 0, amount: 0 };
+
+            acc[key] = {
+              quantity: current.quantity + ligne.quantite,
+              amount: current.amount + Number(ligne.sous_total),
+            };
+          }
+
+          return acc;
+        }, {});
+
+        const mergedLines: InvoiceLine[] = Object.entries(linesByArticle).map(([title, aggregate], index) => ({
+          id: String(index + 1),
+          title,
+          quantity: aggregate.quantity,
+          amount: Number(aggregate.amount.toFixed(2)),
+        }));
+
+        const mergedTotal = factureCommandes.reduce((sum, commande) => sum + Number(commande.total ?? 0), 0);
+
+        const latestCommande = factureCommandes[0];
+
+        setInvoiceLines(mergedLines);
+        setInvoiceRef(`#INV-${String(latestCommande.id).padStart(5, "0")}-${factureCommandes.length}`);
+        setTotalTtc(Number(mergedTotal.toFixed(2)));
+      } catch {
+        setInvoiceLines([]);
+        setInvoiceRef("#INV-00000");
+        setTotalTtc(0);
+      }
+    };
+
+    loadFactureData();
+  }, [tableId]);
+
+  const subtotal = useMemo(() => totalTtc / 1.2, [totalTtc]);
+  const vat = useMemo(() => totalTtc - subtotal, [totalTtc, subtotal]);
 
   if (!jakartaLoaded || !workSansLoaded) {
     return <View style={styles.loadingScreen} />;
@@ -83,19 +148,19 @@ export default function TableFactureScreen() {
       >
         <View style={styles.sectionRow}>
           <View style={styles.sectionAccent} />
-          <Text style={[styles.sectionLabel, { fontSize: Math.round(15 * uiScale) }]}>RECAPITULATIF COMMANDE</Text>
-          <Text style={[styles.invoiceRef, { fontSize: Math.round(14 * uiScale) }]}>#INV-2023-42</Text>
+          <Text style={[styles.sectionLabel, { fontSize: Math.round(15 * uiScale) }]}>RECAPITULATIF COMMANDES</Text>
+          <Text style={[styles.invoiceRef, { fontSize: Math.round(14 * uiScale) }]}>{invoiceRef}</Text>
         </View>
 
         <View style={styles.summaryCard}>
           <View style={styles.linesWrap}>
-            {INVOICE_LINES.map((line) => (
+            {invoiceLines.map((line) => (
               <View key={line.id} style={styles.lineRow}>
                 <View style={styles.lineLeft}>
                   <Text style={[styles.qtyText, { fontSize: Math.round(20 * uiScale) }]}>{`${line.quantity}x`}</Text>
                   <Text style={[styles.itemText, { fontSize: Math.round(22 * uiScale) }]}>{line.title}</Text>
                 </View>
-                <Text style={[styles.amountText, { fontSize: Math.round(20 * uiScale) }]}>{`${line.amount.toFixed(2).replace(".", ",")} EUR`}</Text>
+                <Text style={[styles.amountText, { fontSize: Math.round(20 * uiScale) }]}>{`${line.amount.toFixed(2).replace(".", ",")} DH`}</Text>
               </View>
             ))}
           </View>
@@ -103,18 +168,18 @@ export default function TableFactureScreen() {
           <View style={styles.totalCard}>
             <View style={styles.totalRow}>
               <Text style={[styles.totalSubLabel, { fontSize: Math.round(18 * uiScale) }]}>Sous-total (HT)</Text>
-              <Text style={[styles.totalSubAmount, { fontSize: Math.round(18 * uiScale) }]}>{`${subtotal.toFixed(2).replace(".", ",")} EUR`}</Text>
+              <Text style={[styles.totalSubAmount, { fontSize: Math.round(18 * uiScale) }]}>{`${subtotal.toFixed(2).replace(".", ",")} DH`}</Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={[styles.totalSubLabel, { fontSize: Math.round(18 * uiScale) }]}>TVA (10% & 20%)</Text>
-              <Text style={[styles.totalSubAmount, { fontSize: Math.round(18 * uiScale) }]}>{`${vat.toFixed(2).replace(".", ",")} EUR`}</Text>
+              <Text style={[styles.totalSubAmount, { fontSize: Math.round(18 * uiScale) }]}>{`${vat.toFixed(2).replace(".", ",")} DH`}</Text>
             </View>
 
             <View style={styles.totalDivider} />
 
             <View style={styles.totalRowBottom}>
               <Text style={[styles.totalMainLabel, { fontSize: Math.round(24 * uiScale) }]}>Total (TTC)</Text>
-              <Text style={[styles.totalMainAmount, { fontSize: Math.round(56 * uiScale) }]}>{`${total.toFixed(2).replace(".", ",")} EUR`}</Text>
+              <Text style={[styles.totalMainAmount, { fontSize: Math.round(56 * uiScale) }]}>{`${totalTtc.toFixed(2).replace(".", ",")} DH`}</Text>
             </View>
           </View>
         </View>

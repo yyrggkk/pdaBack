@@ -12,7 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import BottomNavBar from "../components/BottomNavBar";
 import { StatusBar } from "expo-status-bar";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -22,6 +22,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { fetchTables, logoutCurrentUser } from "../services/posApi";
 
 type TableStatus = "free" | "occupied" | "served" | "disabled";
 
@@ -32,25 +33,9 @@ type ServeurScreenProps = {
 type TableItem = {
   number: string;
   status: TableStatus;
+  covers: number;
+  capacity: number;
 };
-
-const TABLES: TableItem[] = [
-  { number: "01", status: "free" },
-  { number: "02", status: "free" },
-  { number: "03", status: "served" },
-  { number: "04", status: "occupied" },
-  { number: "05", status: "free" },
-  { number: "08", status: "served" },
-  { number: "12", status: "free" },
-  { number: "14", status: "occupied" },
-  { number: "15", status: "occupied" },
-  { number: "16", status: "free" },
-  { number: "21", status: "occupied" },
-  { number: "22", status: "free" },
-  { number: "23", status: "disabled" },
-  { number: "24", status: "disabled" },
-  { number: "25", status: "disabled" },
-];
 
 const STATUS_COLOR: Record<TableStatus, string> = {
   free: "#007f35",
@@ -62,6 +47,7 @@ const STATUS_COLOR: Record<TableStatus, string> = {
 export function ServeurScreen({ showBottomNav = true }: ServeurScreenProps = {}) {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const [tables, setTables] = useState<TableItem[]>([]);
   const [jakartaLoaded] = useJakartaFonts({
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
@@ -71,10 +57,47 @@ export function ServeurScreen({ showBottomNav = true }: ServeurScreenProps = {})
     WorkSans_600SemiBold,
   });
 
-  const rows = useMemo(() => TABLES, []);
+  const rows = useMemo(() => tables, [tables]);
   const uiScale = Math.max(0.72, Math.min(width / 430, 1));
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
   const tableSize = Math.max(86, Math.min(112, (width - 96) / 3));
+
+  useEffect(() => {
+    const loadTables = async () => {
+      try {
+        const data = await fetchTables();
+        const mapped: TableItem[] = data.map((table) => {
+          let status: TableStatus = "free";
+
+          if (table.statut === "occupee") {
+            status = "occupied";
+          } else if (table.statut === "servie") {
+            status = "served";
+          } else if (table.statut === "indisponible") {
+            status = "disabled";
+          }
+
+          return {
+            number: String(table.numero).padStart(2, "0"),
+            status,
+            covers: table.couverts,
+            capacity: table.nombreDePlaces,
+          };
+        });
+
+        setTables(mapped);
+      } catch {
+        setTables([]);
+      }
+    };
+
+    loadTables();
+  }, []);
+
+  const handleLogout = async () => {
+    await logoutCurrentUser();
+    router.replace("/");
+  };
 
   if (!jakartaLoaded || !workSansLoaded) {
     return <View style={styles.loadingScreen} />;
@@ -88,7 +111,7 @@ export function ServeurScreen({ showBottomNav = true }: ServeurScreenProps = {})
         <MaterialCommunityIcons name="silverware-variant" size={28} color="#007f35" />
 
         <Pressable
-          onPress={() => router.replace("/")}
+          onPress={handleLogout}
           style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
         >
           <MaterialCommunityIcons name="logout" size={18} color="#0f1f39" />
@@ -143,10 +166,8 @@ export function ServeurScreen({ showBottomNav = true }: ServeurScreenProps = {})
                   params: {
                     tableId: table.number,
                     status: table.status,
-                    covers: table.status === "occupied" ? "3" : table.status === "served" ? "4" : "2",
-                    capacity: "4",
-                    openedAt: table.status === "occupied" ? "12:45" : "",
-                    lastServedAt: table.status === "served" ? "13:12" : "",
+                    covers: String(table.covers),
+                    capacity: String(table.capacity),
                   },
                 });
               }}

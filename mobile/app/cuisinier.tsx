@@ -13,8 +13,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { fetchCommandes, logoutCurrentUser, updateCommandeStatus } from "../services/posApi";
 
 type TicketStatus = "urgent" | "in-progress";
 
@@ -29,47 +30,63 @@ type KitchenTicket = {
   status: TicketStatus;
   statusLabel: "URGENT" | "EN COURS";
   tableLabel: string;
-  timer: string;
+  createdAt: string | null;
   items: TicketItem[];
 };
 
-const INITIAL_TICKETS: KitchenTicket[] = [
-  {
-    id: "t15",
-    status: "urgent",
-    statusLabel: "URGENT",
-    tableLabel: "Table 15",
-    timer: "18:42",
-    items: [
-      { id: "t15-i1", label: "2x Burger Signature", checked: false },
-      { id: "t15-i2", label: "1x Frites Maison Large", checked: false },
-    ],
-  },
-  {
-    id: "t04",
-    status: "in-progress",
-    statusLabel: "EN COURS",
-    tableLabel: "Table 04",
-    timer: "08:15",
-    items: [
-      { id: "t04-i1", label: "1x Salade Cesar", checked: false },
-      { id: "t04-i2", label: "1x Risotto Champignons", checked: true },
-    ],
-  },
-  {
-    id: "t22",
-    status: "in-progress",
-    statusLabel: "EN COURS",
-    tableLabel: "Table 22",
-    timer: "04:30",
-    items: [{ id: "t22-i1", label: "3x Tacos Carnitas", checked: false }],
-  },
-];
+function formatDeviceTime(date: Date): string {
+  return date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatElapsedSince(createdAt: string | null, now: Date): string {
+  if (!createdAt) {
+    return "00:00";
+  }
+
+  const start = new Date(createdAt);
+  if (Number.isNaN(start.getTime())) {
+    return "00:00";
+  }
+
+  const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000));
+  const hours = Math.floor(elapsedSeconds / 3600);
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+  const seconds = elapsedSeconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function elapsedSecondsSince(createdAt: string | null, now: Date): number {
+  if (!createdAt) {
+    return 0;
+  }
+
+  const start = new Date(createdAt);
+  if (Number.isNaN(start.getTime())) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000));
+}
+
+function isTicketUrgent(ticket: KitchenTicket, now: Date): boolean {
+  return ticket.status === "urgent" || elapsedSecondsSince(ticket.createdAt, now) > 15 * 60;
+}
 
 export default function CuisinierScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const [tickets, setTickets] = useState<KitchenTicket[]>(INITIAL_TICKETS);
+  const [tickets, setTickets] = useState<KitchenTicket[]>([]);
+  const [now, setNow] = useState(new Date());
+  const [submittingTicketId, setSubmittingTicketId] = useState<string | null>(null);
 
   const [jakartaLoaded] = useJakartaFonts({
     PlusJakartaSans_700Bold,
@@ -85,6 +102,60 @@ export default function CuisinierScreen() {
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
 
   const waitingCount = useMemo(() => tickets.length, [tickets]);
+  const deviceTime = useMemo(() => formatDeviceTime(now), [now]);
+  const orderedTickets = useMemo(() => {
+    return [...tickets].sort((a, b) => {
+      const aUrgent = isTicketUrgent(a, now);
+      const bUrgent = isTicketUrgent(b, now);
+
+      if (aUrgent !== bUrgent) {
+        return aUrgent ? -1 : 1;
+      }
+
+      const aElapsed = elapsedSecondsSince(a.createdAt, now);
+      const bElapsed = elapsedSecondsSince(b.createdAt, now);
+      return bElapsed - aElapsed;
+    });
+  }, [tickets, now]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const loadKitchenTickets = async () => {
+      try {
+        const commandes = await fetchCommandes(["en_cuisine", "en_preparation"]);
+
+        const mapped: KitchenTicket[] = commandes.map((commande) => {
+          const isUrgent = commande.statut === "prete";
+
+          return {
+            id: String(commande.id),
+            status: isUrgent ? "urgent" : "in-progress",
+            statusLabel: isUrgent ? "URGENT" : "EN COURS",
+            tableLabel: `Table ${String(commande.table_numero ?? "00").padStart(2, "0")}`,
+            createdAt: commande.date_commande,
+            items: commande.lignes.map((ligne) => ({
+              id: `${commande.id}-${ligne.id}`,
+              label: `${ligne.quantite}x ${ligne.article_nom}`,
+              checked: false,
+            })),
+          };
+        });
+
+        setTickets(mapped);
+      } catch {
+        setTickets([]);
+      }
+    };
+
+    loadKitchenTickets();
+  }, []);
 
   const toggleItem = (ticketId: string, itemId: string) => {
     setTickets((prev) =>
@@ -99,6 +170,40 @@ export default function CuisinierScreen() {
         };
       }),
     );
+  };
+
+  const handleLogout = async () => {
+    await logoutCurrentUser();
+    router.replace("/");
+  };
+
+  const handleMarkReady = async (ticket: KitchenTicket) => {
+    const isReady = ticket.items.length > 0 && ticket.items.every((item) => item.checked);
+    if (!isReady || submittingTicketId === ticket.id) {
+      return;
+    }
+
+    setSubmittingTicketId(ticket.id);
+
+    try {
+      const commandeId = Number(ticket.id);
+      if (Number.isNaN(commandeId)) {
+        return;
+      }
+
+      try {
+        await updateCommandeStatus(commandeId, "prete");
+      } catch {
+        await updateCommandeStatus(commandeId, "en_preparation");
+        await updateCommandeStatus(commandeId, "prete");
+      }
+
+      setTickets((prev) => prev.filter((entry) => entry.id !== ticket.id));
+    } catch {
+      // Keep ticket visible if status update fails.
+    } finally {
+      setSubmittingTicketId((current) => (current === ticket.id ? null : current));
+    }
   };
 
   if (!jakartaLoaded || !workSansLoaded) {
@@ -119,10 +224,10 @@ export default function CuisinierScreen() {
           <Text style={[styles.waitingText, { fontSize: Math.round(16 * uiScale) }]}>{`${waitingCount} EN ATTENTE`}</Text>
         </View>
 
-        <Text style={[styles.timeText, { fontSize: Math.round(44 * uiScale) }]}>13:24</Text>
+        <Text style={[styles.timeText, { fontSize: Math.round(44 * uiScale) }]}>{deviceTime}</Text>
 
         <Pressable
-          onPress={() => router.replace("/")}
+          onPress={handleLogout}
           style={({ pressed }) => [styles.logoutButton, pressed && styles.scaleDown]}
         >
           <MaterialCommunityIcons name="logout" size={Math.round(18 * uiScale)} color="#0f1f39" />
@@ -139,41 +244,59 @@ export default function CuisinierScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {tickets.map((ticket) => (
+        {orderedTickets.map((ticket) => (
           <View key={ticket.id} style={styles.ticketCard}>
-            <View style={[styles.ribbon, ticket.status === "urgent" ? styles.ribbonUrgent : styles.ribbonProgress]} />
+            {(() => {
+              const isUrgent = isTicketUrgent(ticket, now);
+
+              return (
+                <View style={[styles.ribbon, isUrgent ? styles.ribbonUrgent : styles.ribbonProgress]} />
+              );
+            })()}
 
             <View style={styles.cardBody}>
               <View style={styles.cardHeader}>
                 <View>
-                  <Text
-                    style={[
-                      styles.badgeText,
-                      ticket.status === "urgent" ? styles.badgeUrgent : styles.badgeProgress,
-                      { fontSize: Math.round(15 * uiScale) },
-                    ]}
-                  >
-                    {ticket.statusLabel}
-                  </Text>
+                  {(() => {
+                    const isUrgent = isTicketUrgent(ticket, now);
+
+                    return (
+                      <Text
+                        style={[
+                          styles.badgeText,
+                          isUrgent ? styles.badgeUrgent : styles.badgeProgress,
+                          { fontSize: Math.round(15 * uiScale) },
+                        ]}
+                      >
+                        {isUrgent ? "URGENT" : "EN COURS"}
+                      </Text>
+                    );
+                  })()}
                   <Text style={[styles.tableText, { fontSize: Math.round(66 * uiScale) }]}>{ticket.tableLabel}</Text>
                 </View>
 
-                <View style={[styles.timerPill, ticket.status === "urgent" ? styles.timerUrgent : styles.timerProgress]}>
-                  <MaterialCommunityIcons
-                    name="timer"
-                    size={Math.round(22 * uiScale)}
-                    color={ticket.status === "urgent" ? "#b62027" : "#b35b08"}
-                  />
-                  <Text
-                    style={[
-                      styles.timerText,
-                      ticket.status === "urgent" ? styles.timerUrgentText : styles.timerProgressText,
-                      { fontSize: Math.round(20 * uiScale) },
-                    ]}
-                  >
-                    {ticket.timer}
-                  </Text>
-                </View>
+                {(() => {
+                  const isUrgent = isTicketUrgent(ticket, now);
+
+                  return (
+                    <View style={[styles.timerPill, isUrgent ? styles.timerUrgent : styles.timerProgress]}>
+                      <MaterialCommunityIcons
+                        name="timer"
+                        size={Math.round(22 * uiScale)}
+                        color={isUrgent ? "#b62027" : "#b35b08"}
+                      />
+                      <Text
+                        style={[
+                          styles.timerText,
+                          isUrgent ? styles.timerUrgentText : styles.timerProgressText,
+                          { fontSize: Math.round(20 * uiScale) },
+                        ]}
+                      >
+                        {formatElapsedSince(ticket.createdAt, now)}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
 
               <View style={styles.itemsWrap}>
@@ -200,17 +323,35 @@ export default function CuisinierScreen() {
                 ))}
               </View>
 
-              <Pressable style={({ pressed }) => [styles.readyWrap, pressed && styles.scaleDown]}>
-                <LinearGradient
-                  colors={["#006e2f", "#22c55e"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.readyButton}
-                >
-                  <MaterialCommunityIcons name="room-service-outline" size={Math.round(24 * uiScale)} color="#ffffff" />
-                  <Text style={[styles.readyText, { fontSize: Math.round(18 * uiScale) }]}>PRET</Text>
-                </LinearGradient>
-              </Pressable>
+              {(() => {
+                const allChecked = ticket.items.length > 0 && ticket.items.every((item) => item.checked);
+                const isSubmitting = submittingTicketId === ticket.id;
+                const disabled = !allChecked || isSubmitting;
+
+                return (
+                  <Pressable
+                    disabled={disabled}
+                    onPress={() => handleMarkReady(ticket)}
+                    style={({ pressed }) => [
+                      styles.readyWrap,
+                      disabled && styles.readyWrapDisabled,
+                      pressed && !disabled && styles.scaleDown,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={disabled ? ["#96a1af", "#bec6d0"] : ["#006e2f", "#22c55e"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.readyButton}
+                    >
+                      <MaterialCommunityIcons name="room-service-outline" size={Math.round(24 * uiScale)} color="#ffffff" />
+                      <Text style={[styles.readyText, { fontSize: Math.round(18 * uiScale) }]}>
+                        {isSubmitting ? "..." : "PRET"}
+                      </Text>
+                    </LinearGradient>
+                  </Pressable>
+                );
+              })()}
             </View>
           </View>
         ))}
@@ -391,6 +532,10 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 7,
+  },
+  readyWrapDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
   readyButton: {
     height: 78,

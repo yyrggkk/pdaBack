@@ -25,12 +25,13 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { fetchMenuCategories } from "../../../services/posApi";
 
-type CategoryId = 0 | 1 | 2 | 3 | 4;
+type CategoryId = number;
 
 type Category = {
   id: CategoryId;
-  label: "Tout" | "Mains" | "Starters" | "Sides" | "Desserts";
+  label: string;
 };
 
 type TableMenuItem = {
@@ -94,106 +95,21 @@ function parseCartQuantities(rawCart: string): Record<string, number> {
   }
 }
 
-const CATEGORIES: Category[] = [
-  { id: 0, label: "Tout" },
-  { id: 1, label: "Mains" },
-  { id: 2, label: "Starters" },
-  { id: 3, label: "Sides" },
-  { id: 4, label: "Desserts" },
-];
-
-const MENU_ITEMS: TableMenuItem[] = [
-  {
-    id: "1",
-    categoryId: 1,
-    title: "Signature Smokehouse Burger",
-    price: 18.5,
-    disponible: true,
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD1sC2FvMVa1jqH2pNzJzlZP-UIJMbaAaeu4HhqT7pj0SXfPfWex_BxUXaB-TLjmNr1zfYHqN62dHeq5BcB89Y65GlQLIjfQkoGv1iJfGc0HgbUoIH5PYzudlvShbMG0y1hyOmheQiggZBf3oC3isE5j41nHs1lV8JpzpzMSwtr2vE_ht6jwuKHBUrpRTwfWP5KF4YBdaE35Hmlw9YKbREY8SZfTusA_nOEsgphkGop_4P2TlVy_dzNT9o7q-c3LJ_oEjplbTh8WFQ",
-  },
-  {
-    id: "2",
-    categoryId: 1,
-    title: "Wild Atlantic Salmon",
-    price: 24,
-    disponible: true,
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAqSlljLniBwvB5ArKRIKWfBm3KM6b7HZia5Z4aLfqdW5JWsABGNMQLZG3LYfNn6AvkixATUg8DEupvUEmu9YXTitOuOXO0fat28IXwevTpvt4xA1aKcKc7QshRLSyIUHHJt7Ot2QfZLqASQ5iBx5_qnyuHT_zrLz1fE-ui0Fa2HaWRJMH9Oqt-Zc0GL6Uc5EaVbGmaOJu_EpPrHQgXp0sHj0lt2b_dhaCgItVYGD5Z_xW2ZxUf6vauOY2cdhFBSpHmuU5NuyBj2Q8",
-  },
-  {
-    id: "3",
-    categoryId: 1,
-    title: "Black Truffle Tagliatelle",
-    price: 22,
-    disponible: false,
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD5XjQUg7zeXcMv-EJ1JG1SYFwfYe_M-Zb6pC85Re14vr7bULP2LeaN_TR66rOjWY12l1jn9VhF0Se6p0cICpuO7KsE4rU8ANJ3-FA-mnAqzKoQovq_o-ZvuhK9aUqmxG8nQFpDDfKXJn6ggG1oFIp3sPuw466_X1k1TVMJ0rHk_RI8VcAWkYKthc-VxaIQPqf1i4acdj8QVZzfOo5zKIaMj7uelFhOEKieHbThhhYmJFGn-Iq2KiE6E3Kpr01RbtZhu3cdiHiwcF0",
-  },
-  {
-    id: "4",
-    categoryId: 1,
-    title: "Roasted Heritage Chicken",
-    price: 19.5,
-    disponible: true,
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAFicAGwCAjA3i_vW1FSEgbgKugZ32MEI7wrf4CM84dHFbtIfX9VwLXNJ8exM0Z9nWkARN6uwzbIhbKXNKI-DiCOT7jNhyqM1uC1heeq3Tl8dWcuYBBetXDJiCjNEes7TtHLYbwZ9tEg2g4QX95uXFz_yXIb4Smr7f_KXNw5bpdR5mhMsNv1xlJy6JLq4QMczP1IG5RbuOsSXvj35hdan0FsfYj3EORJaL5xCrmwhZMT1CdaVM01-JbyMTPJ7tE1Ulz7P2VgR7oaDI",
-  },
-  {
-    id: "5",
-    categoryId: 2,
-    title: "Carpaccio de Boeuf",
-    price: 12,
-    disponible: true,
-    image: "https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "6",
-    categoryId: 2,
-    title: "Veloute de Champignons",
-    price: 9.5,
-    disponible: true,
-    image: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "7",
-    categoryId: 3,
-    title: "Pommes Rissolees",
-    price: 7,
-    disponible: true,
-    image: "https://images.unsplash.com/photo-1518013431117-eb1465fa5752?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "8",
-    categoryId: 3,
-    title: "Legumes Grilles",
-    price: 8.5,
-    disponible: true,
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "9",
-    categoryId: 4,
-    title: "Fondant Chocolat",
-    price: 10,
-    disponible: true,
-    image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "10",
-    categoryId: 4,
-    title: "Tarte Citron",
-    price: 9,
-    disponible: false,
-    image: "https://images.unsplash.com/photo-1464306076886-da185f6a9d05?auto=format&fit=crop&w=900&q=80",
-  },
-];
+const ALL_CATEGORY_ID = 0;
 
 export default function TableMenuScreen() {
   const router = useRouter();
-  const { tableId, cart } = useLocalSearchParams<{ tableId?: string; cart?: string | string[] }>();
+  const { tableId, cart, covers, openedAt, status } = useLocalSearchParams<{
+    tableId?: string;
+    cart?: string | string[];
+    covers?: string;
+    openedAt?: string;
+    status?: string;
+  }>();
   const { width, height } = useWindowDimensions();
-  const [activeCategoryId, setActiveCategoryId] = useState<CategoryId>(1);
+  const [categories, setCategories] = useState<Category[]>([{ id: ALL_CATEGORY_ID, label: "Tout" }]);
+  const [menuItems, setMenuItems] = useState<TableMenuItem[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<CategoryId>(ALL_CATEGORY_ID);
   const initialQuantities = useMemo(() => parseCartQuantities(getParamString(cart)), [cart]);
   const [quantities, setQuantities] = useState<Record<string, number>>(initialQuantities);
   const [searchQuery, setSearchQuery] = useState("");
@@ -213,20 +129,55 @@ export default function TableMenuScreen() {
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
 
   useEffect(() => {
-    if (isSearchOpen && activeCategoryId !== 0) {
-      setActiveCategoryId(0);
+    if (isSearchOpen && activeCategoryId !== ALL_CATEGORY_ID) {
+      setActiveCategoryId(ALL_CATEGORY_ID);
     }
   }, [isSearchOpen, activeCategoryId]);
+
+  useEffect(() => {
+    const loadMenu = async () => {
+      try {
+        const apiCategories = await fetchMenuCategories();
+
+        const mappedCategories: Category[] = [
+          { id: ALL_CATEGORY_ID, label: "Tout" },
+          ...apiCategories.map((category) => ({
+            id: category.id,
+            label: category.nom,
+          })),
+        ];
+
+        const mappedItems: TableMenuItem[] = apiCategories.flatMap((category) =>
+          category.articles.map((article) => ({
+            id: String(article.id),
+            categoryId: category.id,
+            title: article.nom,
+            price: Number(article.prix),
+            image: article.image_url ?? "",
+            disponible: article.disponibilite,
+          })),
+        );
+
+        setCategories(mappedCategories);
+        setMenuItems(mappedItems);
+      } catch {
+        setCategories([{ id: ALL_CATEGORY_ID, label: "Tout" }]);
+        setMenuItems([]);
+      }
+    };
+
+    loadMenu();
+  }, []);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return MENU_ITEMS.filter((item) => {
+    return menuItems.filter((item) => {
       if (!item.disponible) {
         return false;
       }
 
-      if (activeCategoryId !== 0 && item.categoryId !== activeCategoryId) {
+      if (activeCategoryId !== ALL_CATEGORY_ID && item.categoryId !== activeCategoryId) {
         return false;
       }
 
@@ -236,25 +187,25 @@ export default function TableMenuScreen() {
 
       return item.title.toLowerCase().includes(query);
     });
-  }, [activeCategoryId, searchQuery]);
+  }, [activeCategoryId, searchQuery, menuItems]);
 
   const cartCount = useMemo(() => {
     return Object.values(quantities).reduce((sum, value) => sum + value, 0);
   }, [quantities]);
 
   const selectedItems = useMemo<CartPayloadItem[]>(() => {
-    return MENU_ITEMS.filter((item) => (quantities[item.id] ?? 0) > 0).map((item) => ({
+    return menuItems.filter((item) => (quantities[item.id] ?? 0) > 0).map((item) => ({
       id: item.id,
       title: item.title,
       price: item.price,
       image: item.image,
       quantity: quantities[item.id] ?? 0,
     }));
-  }, [quantities]);
+  }, [quantities, menuItems]);
 
   const cartTotal = useMemo(() => {
-    return MENU_ITEMS.reduce((sum, item) => sum + (quantities[item.id] ?? 0) * item.price, 0);
-  }, [quantities]);
+    return menuItems.reduce((sum, item) => sum + (quantities[item.id] ?? 0) * item.price, 0);
+  }, [quantities, menuItems]);
 
   const updateQuantity = (itemId: string, delta: 1 | -1) => {
     setQuantities((prev) => {
@@ -278,6 +229,9 @@ export default function TableMenuScreen() {
       params: {
         tableId: tableId ?? "12",
         cart: JSON.stringify(selectedItems),
+        covers: covers ?? "1",
+        openedAt: openedAt ?? "",
+        status: status ?? "free",
       },
     });
   };
@@ -309,7 +263,7 @@ export default function TableMenuScreen() {
               const next = !value;
 
               if (next) {
-                setActiveCategoryId(0);
+                setActiveCategoryId(ALL_CATEGORY_ID);
               }
 
               return next;
@@ -353,7 +307,7 @@ export default function TableMenuScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsContent} style={styles.chipsWrap}>
-          {CATEGORIES.map((category) => {
+          {categories.map((category) => {
             const isActive = category.id === activeCategoryId;
             return (
               <Pressable

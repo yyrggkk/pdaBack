@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('montantHT', 10, 2);
             $table->decimal('montantTVA', 10, 2);
             $table->decimal('montantTTC', 10, 2);
-            $table->enum('modePaiement', ['especes', 'carte_bancaire']);
+            $table->enum('modePaiement', ['especes', 'carte_bancaire', 'titre_restaurant']);
             $table->unsignedInteger('idCommande')->unique('uk_facture_commande');
 
             $table->foreign('idCommande', 'fk_facture_commande')

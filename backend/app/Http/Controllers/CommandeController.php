@@ -103,11 +103,19 @@ class CommandeController extends Controller
             ], 422);
         }
 
+        $nextDateCommande = $newStatus === 'servie' ? now() : $commande->dateCommande;
+
         // Update status and timestamp
         $commande->update([
             'statut' => $newStatus,
-            'dateCommande' => $commande->dateCommande, // preserve original
+            'dateCommande' => $nextDateCommande,
         ]);
+
+        if ($newStatus === 'servie') {
+            TableRestaurant::query()
+                ->where('idTable', $commande->idTable)
+                ->update(['statut' => 'servie']);
+        }
 
         // Reload with relationships
         $commande->load(['tableRestaurant', 'lignesCommande.article']);
@@ -210,8 +218,8 @@ class CommandeController extends Controller
                     ]);
                 }
 
-                // Update table status to "occupe"
-                $table->statut = 'occupe';
+                // Keep table as 'servie' if already served, otherwise mark occupied.
+                $table->statut = $table->statut === 'servie' ? 'servie' : 'occupe';
                 $table->save();
 
                 // Reload commande with relationships

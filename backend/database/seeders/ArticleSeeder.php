@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Article;
 use App\Models\Categorie;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class ArticleSeeder extends Seeder
 {
@@ -15,81 +14,25 @@ class ArticleSeeder extends Seeder
     public function run(): void
     {
         $menu = [
-            'Entrees Marocaines' => [
-                ['nom' => 'Zaalouk', 'prix' => 28.00, 'image' => 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop'],
-                ['nom' => 'Taktouka', 'prix' => 26.00, 'image' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop'],
-                ['nom' => 'Briouates fromage', 'prix' => 34.00, 'image' => 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop'],
-                ['nom' => 'Harira', 'prix' => 30.00, 'image' => 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=400&fit=crop'],
-                ['nom' => 'Salade marocaine', 'prix' => 24.00, 'image' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=400&fit=crop'],
-                ['nom' => 'Pastilla poulet', 'prix' => 45.00, 'image' => 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=400&fit=crop'],
-                ['nom' => 'Soupe légumes', 'prix' => 22.00, 'image' => 'https://images.unsplash.com/photo-1603105037880-880cd4edfb0d?w=400&h=400&fit=crop'],
-                ['nom' => 'Bissara', 'prix' => 18.00, 'image' => 'https://images.unsplash.com/photo-1604152135912-04a022e23696?w=400&h=400&fit=crop'],
+            'Mains' => [
+                ['nom' => 'Signature Smokehouse Burger', 'prix' => 18.50, 'disponible' => true, 'image' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuD1sC2FvMVa1jqH2pNzJzlZP-UIJMbaAaeu4HhqT7pj0SXfPfWex_BxUXaB-TLjmNr1zfYHqN62dHeq5BcB89Y65GlQLIjfQkoGv1iJfGc0HgbUoIH5PYzudlvShbMG0y1hyOmheQiggZBf3oC3isE5j41nHs1lV8JpzpzMSwtr2vE_ht6jwuKHBUrpRTwfWP5KF4YBdaE35Hmlw9YKbREY8SZfTusA_nOEsgphkGop_4P2TlVy_dzNT9o7q-c3LJ_oEjplbTh8WFQ'],
+                ['nom' => 'Wild Atlantic Salmon', 'prix' => 24.00, 'disponible' => true, 'image' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuAqSlljLniBwvB5ArKRIKWfBm3KM6b7HZia5Z4aLfqdW5JWsABGNMQLZG3LYfNn6AvkixATUg8DEupvUEmu9YXTitOuOXO0fat28IXwevTpvt4xA1aKcKc7QshRLSyIUHHJt7Ot2QfZLqASQ5iBx5_qnyuHT_zrLz1fE-ui0Fa2HaWRJMH9Oqt-Zc0GL6Uc5EaVbGmaOJu_EpPrHQgXp0sHj0lt2b_dhaCgItVYGD5Z_xW2ZxUf6vauOY2cdhFBSpHmuU5NuyBj2Q8'],
+                ['nom' => 'Black Truffle Tagliatelle', 'prix' => 22.00, 'disponible' => false, 'image' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuD5XjQUg7zeXcMv-EJ1JG1SYFwfYe_M-Zb6pC85Re14vr7bULP2LeaN_TR66rOjWY12l1jn9VhF0Se6p0cICpuO7KsE4rU8ANJ3-FA-mnAqzKoQovq_o-ZvuhK9aUqmxG8nQFpDDfKXJn6ggG1oFIp3sPuw466_X1k1TVMJ0rHk_RI8VcAWkYKthc-VxaIQPqf1i4acdj8QVZzfOo5zKIaMj7uelFhOEKieHbThhhYmJFGn-Iq2KiE6E3Kpr01RbtZhu3cdiHiwcF0'],
+                ['nom' => 'Roasted Heritage Chicken', 'prix' => 19.50, 'disponible' => true, 'image' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuAFicAGwCAjA3i_vW1FSEgbgKugZ32MEI7wrf4CM84dHFbtIfX9VwLXNJ8exM0Z9nWkARN6uwzbIhbKXNKI-DiCOT7jNhyqM1uC1heeq3Tl8dWcuYBBetXDJiCjNEes7TtHLYbwZ9tEg2g4QX95uXFz_yXIb4Smr7f_KXNw5bpdR5mhMsNv1xlJy6JLq4QMczP1IG5RbuOsSXvj35hdan0FsfYj3EORJaL5xCrmwhZMT1CdaVM01-JbyMTPJ7tE1Ulz7P2VgR7oaDI'],
+                ['nom' => 'Entrecote Grillee', 'prix' => 26.00, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=900&q=80'],
             ],
-            'Tajines' => [
-                ['nom' => 'Tajine poulet olives', 'prix' => 78.00, 'image' => 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine kefta oeufs', 'prix' => 72.00, 'image' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine agneau pruneaux', 'prix' => 92.00, 'image' => 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine légumes', 'prix' => 68.00, 'image' => 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine poisson', 'prix' => 88.00, 'image' => 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine boeuf carottes', 'prix' => 85.00, 'image' => 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine mrouzia', 'prix' => 98.00, 'image' => 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=400&fit=crop'],
-                ['nom' => 'Tajine crevettes', 'prix' => 95.00, 'image' => 'https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=400&h=400&fit=crop'],
+            'Starters' => [
+                ['nom' => 'Carpaccio de Boeuf', 'prix' => 12.00, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=900&q=80'],
+                ['nom' => 'Veloute de Champignons', 'prix' => 9.50, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80'],
             ],
-            'Couscous' => [
-                ['nom' => 'Couscous royal', 'prix' => 95.00, 'image' => 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=400&fit=crop'],
-                ['nom' => 'Couscous tfaya', 'prix' => 84.00, 'image' => 'https://images.unsplash.com/photo-1516714435131-44d6b64dc6a2?w=400&h=400&fit=crop'],
-                ['nom' => 'Couscous poulet', 'prix' => 79.00, 'image' => 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=400&fit=crop'],
-                ['nom' => 'Couscous légumes', 'prix' => 70.00, 'image' => 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=400&h=400&fit=crop'],
-                ['nom' => 'Couscous agneau', 'prix' => 89.00, 'image' => 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=400&fit=crop'],
-                ['nom' => 'Couscous merguez', 'prix' => 82.00, 'image' => 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400&h=400&fit=crop'],
+            'Sides' => [
+                ['nom' => 'Pommes Rissolees', 'prix' => 7.00, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1518013431117-eb1465fa5752?auto=format&fit=crop&w=900&q=80'],
+                ['nom' => 'Legumes Grilles', 'prix' => 8.50, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80'],
             ],
-            'Grillades' => [
-                ['nom' => 'Brochettes kefta', 'prix' => 74.00, 'image' => 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=400&h=400&fit=crop'],
-                ['nom' => 'Brochettes poulet', 'prix' => 69.00, 'image' => 'https://images.unsplash.com/photo-1532636875304-0c89f6d6e6cd?w=400&h=400&fit=crop'],
-                ['nom' => 'Côtelettes agneau', 'prix' => 108.00, 'image' => 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=400&fit=crop'],
-                ['nom' => 'Mix grill maison', 'prix' => 118.00, 'image' => 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=400&fit=crop'],
-                ['nom' => 'Brochettes boeuf', 'prix' => 85.00, 'image' => 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop'],
-                ['nom' => 'Poulet grillé', 'prix' => 75.00, 'image' => 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=400&h=400&fit=crop'],
-                ['nom' => 'Merguez grillées', 'prix' => 65.00, 'image' => 'https://images.unsplash.com/photo-1558030137-a56c1b004224?w=400&h=400&fit=crop'],
-                ['nom' => 'Foie grillé', 'prix' => 55.00, 'image' => 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=400&fit=crop'],
-            ],
-            'Patisseries' => [
-                ['nom' => 'Corne de gazelle', 'prix' => 18.00, 'image' => 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&h=400&fit=crop'],
-                ['nom' => 'Chebakia', 'prix' => 20.00, 'image' => 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=400&h=400&fit=crop'],
-                ['nom' => 'Sellou', 'prix' => 22.00, 'image' => 'https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400&h=400&fit=crop'],
-                ['nom' => 'M\'hancha amandes', 'prix' => 27.00, 'image' => 'https://images.unsplash.com/photo-1559181567-c3190ca9959b?w=400&h=400&fit=crop'],
-                ['nom' => 'Baklava', 'prix' => 25.00, 'image' => 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=400&h=400&fit=crop'],
-                ['nom' => 'Briouates miel', 'prix' => 24.00, 'image' => 'https://images.unsplash.com/photo-1607478900766-efe13248b125?w=400&h=400&fit=crop'],
-                ['nom' => 'Ghriba coco', 'prix' => 16.00, 'image' => 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&h=400&fit=crop'],
-                ['nom' => 'Fekkas', 'prix' => 15.00, 'image' => 'https://images.unsplash.com/photo-1558303386-d9e9ccfb1df8?w=400&h=400&fit=crop'],
-            ],
-            'Boissons Chaudes' => [
-                ['nom' => 'Thé à la menthe', 'prix' => 16.00, 'image' => 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop'],
-                ['nom' => 'Café noir', 'prix' => 14.00, 'image' => 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&h=400&fit=crop'],
-                ['nom' => 'Café nous-nous', 'prix' => 17.00, 'image' => 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=400&fit=crop'],
-                ['nom' => 'Verveine', 'prix' => 15.00, 'image' => 'https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2?w=400&h=400&fit=crop'],
-                ['nom' => 'Cappuccino', 'prix' => 22.00, 'image' => 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=400&fit=crop'],
-                ['nom' => 'Chocolat chaud', 'prix' => 20.00, 'image' => 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&h=400&fit=crop'],
-            ],
-            'Jus Frais' => [
-                ['nom' => 'Jus d\'orange', 'prix' => 19.00, 'image' => 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400&h=400&fit=crop'],
-                ['nom' => 'Jus avocat', 'prix' => 32.00, 'image' => 'https://images.unsplash.com/photo-1638176066666-ffb2f013c7dd?w=400&h=400&fit=crop'],
-                ['nom' => 'Jus panaché', 'prix' => 29.00, 'image' => 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=400&fit=crop'],
-                ['nom' => 'Citronnade', 'prix' => 18.00, 'image' => 'https://images.unsplash.com/photo-1523677011781-c91d1bbe2f9e?w=400&h=400&fit=crop'],
-                ['nom' => 'Jus pomme', 'prix' => 20.00, 'image' => 'https://images.unsplash.com/photo-1576673442511-7e39b6545c87?w=400&h=400&fit=crop'],
-                ['nom' => 'Smoothie fruits', 'prix' => 35.00, 'image' => 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=400&h=400&fit=crop'],
-                ['nom' => 'Jus carotte', 'prix' => 22.00, 'image' => 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=400&h=400&fit=crop'],
-                ['nom' => 'Jus betterave', 'prix' => 24.00, 'image' => 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=400&h=400&fit=crop'],
-            ],
-            'Boissons Froides' => [
-                ['nom' => 'Eau minérale 50cl', 'prix' => 10.00, 'image' => 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&h=400&fit=crop'],
-                ['nom' => 'Eau gazeuse', 'prix' => 12.00, 'image' => 'https://images.unsplash.com/photo-1603394630850-69a0c6c7e8e7?w=400&h=400&fit=crop'],
-                ['nom' => 'Coca Cola', 'prix' => 14.00, 'image' => 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400&h=400&fit=crop'],
-                ['nom' => 'Sprite', 'prix' => 14.00, 'image' => 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&h=400&fit=crop'],
-                ['nom' => 'Fanta', 'prix' => 14.00, 'image' => 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&h=400&fit=crop'],
-                ['nom' => 'Ice Tea', 'prix' => 16.00, 'image' => 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop'],
-                ['nom' => 'Red Bull', 'prix' => 25.00, 'image' => 'https://images.unsplash.com/photo-1527960471264-932f39eb5846?w=400&h=400&fit=crop'],
-                ['nom' => 'Eau 1.5L', 'prix' => 15.00, 'image' => 'https://images.unsplash.com/photo-1560023907-5f339617ea30?w=400&h=400&fit=crop'],
+            'Desserts' => [
+                ['nom' => 'Fondant Chocolat', 'prix' => 10.00, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=900&q=80'],
+                ['nom' => 'Tarte Citron', 'prix' => 9.00, 'disponible' => false, 'image' => 'https://images.unsplash.com/photo-1464306076886-da185f6a9d05?auto=format&fit=crop&w=900&q=80'],
+                ['nom' => 'Cafe Gourmand', 'prix' => 9.00, 'disponible' => true, 'image' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80'],
             ],
         ];
 
@@ -109,14 +52,11 @@ class ArticleSeeder extends Seeder
                     [
                         'description' => 'Recette maison inspirée de la cuisine marocaine.',
                         'prix' => $article['prix'],
-                        'disponible' => true,
+                        'disponible' => $article['disponible'],
                         'image' => $article['image'],
                     ]
                 );
             }
         }
-
-        // Quelques indisponibilités temporaires pour réalisme.
-        Article::query()->inRandomOrder()->limit(5)->update(['disponible' => false]);
     }
 }

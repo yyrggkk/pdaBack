@@ -8,9 +8,10 @@ type BottomNavTab = "plan" | "menu" | "commandes";
 type BottomNavBarProps = {
   activeTab: BottomNavTab;
   onTabChange?: (tab: BottomNavTab) => void;
+  readyCommandesCount?: number;
 };
 
-export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarProps) {
+export default function BottomNavBar({ activeTab, onTabChange, readyCommandesCount = 0 }: BottomNavBarProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const uiScale = Math.max(0.72, Math.min(width / 430, 1));
@@ -19,6 +20,8 @@ export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarPro
   const inactiveHeight = Math.max(80, Math.round(98 * uiScale));
   const iconSize = Math.round(28 * uiScale);
   const labelSize = Math.round(14 * uiScale);
+  const hasReadyCommandes = readyCommandesCount > 0;
+  const readyCommandesLabel = readyCommandesCount > 99 ? "99+" : String(readyCommandesCount);
 
   const goPlan = () => {
     if (onTabChange) {
@@ -109,7 +112,11 @@ export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarPro
           >
             <View style={styles.activeCommandesIconWrap}>
               <MaterialCommunityIcons name="note-text-outline" size={iconSize} color="#ffffff" />
-              <View style={styles.activeCommandesDot} />
+              {hasReadyCommandes ? (
+                <View style={styles.activeCommandesBadge}>
+                  <Text style={styles.activeCommandesBadgeText}>{readyCommandesLabel}</Text>
+                </View>
+              ) : null}
             </View>
             <Text style={[styles.activeTabText, { fontSize: labelSize }]}>COMMANDES</Text>
           </LinearGradient>
@@ -119,7 +126,14 @@ export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarPro
           onPress={goCommandes}
           style={({ pressed }) => [styles.inactiveTab, { height: inactiveHeight }, pressed && styles.scaleDown]}
         >
-          <MaterialCommunityIcons name="note-text-outline" size={iconSize} color="#767d8b" />
+          <View style={styles.inactiveCommandesIconWrap}>
+            <MaterialCommunityIcons name="note-text-outline" size={iconSize} color="#767d8b" />
+            {hasReadyCommandes ? (
+              <View style={styles.inactiveCommandesBadge}>
+                <Text style={styles.inactiveCommandesBadgeText}>{readyCommandesLabel}</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={[styles.inactiveTabText, { fontSize: labelSize }]}>COMMANDES</Text>
         </Pressable>
       )}
@@ -166,16 +180,44 @@ const styles = StyleSheet.create({
   activeCommandesIconWrap: {
     position: "relative",
   },
-  activeCommandesDot: {
+  activeCommandesBadge: {
     position: "absolute",
-    right: -1,
-    top: 1,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    right: -12,
+    top: -8,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#22c55e",
+    paddingHorizontal: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeCommandesBadgeText: {
+    color: "#0b7936",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
+    fontSize: 11,
+    lineHeight: 12,
+  },
+  inactiveCommandesIconWrap: {
+    position: "relative",
+  },
+  inactiveCommandesBadge: {
+    position: "absolute",
+    right: -12,
+    top: -8,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#dc2f36",
+    paddingHorizontal: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inactiveCommandesBadgeText: {
+    color: "#ffffff",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
+    fontSize: 11,
+    lineHeight: 12,
   },
   inactiveTab: {
     flex: 1,

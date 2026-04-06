@@ -20,12 +20,14 @@ import {
   useFonts as useWorkSansFonts,
 } from "@expo-google-fonts/work-sans";
 import { useState } from "react";
+import { loginWithPin } from "../services/posApi";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "backspace"];
 
 export default function Index() {
   const router = useRouter();
   const [pin, setPin] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { width, height } = useWindowDimensions();
   const [jakartaLoaded] = useJakartaFonts({ PlusJakartaSans_800ExtraBold });
   const [workSansLoaded] = useWorkSansFonts({
@@ -58,17 +60,27 @@ export default function Index() {
     setPin((prev) => (prev.length < 4 ? `${prev}${key}` : prev));
   };
 
-  const onOpenSession = () => {
-    if (pin.length !== 4) {
+  const onOpenSession = async () => {
+    if (pin.length !== 4 || isLoggingIn) {
       return;
     }
 
-    if (pin === "7777") {
-      router.push("./cuisinier");
-      return;
-    }
+    try {
+      setIsLoggingIn(true);
+      const auth = await loginWithPin(pin);
 
-    router.push("./pos");
+      if (auth.user.role === "cuisinier") {
+        router.replace("./cuisinier");
+        return;
+      }
+
+      router.replace("./pos");
+    } catch {
+      // Keep UX simple for PDA mode; invalid PIN keeps user on keypad.
+      setPin("");
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   return (
@@ -169,7 +181,7 @@ export default function Index() {
           onPress={onOpenSession}
           style={({ pressed }) => [
             styles.ctaWrapper,
-            pin.length !== 4 && styles.ctaDisabled,
+            (pin.length !== 4 || isLoggingIn) && styles.ctaDisabled,
             pressed && styles.ctaPressed,
           ]}
         >
@@ -188,7 +200,7 @@ export default function Index() {
                 },
               ]}
             >
-              Ouvrir ma session
+              {isLoggingIn ? "Connexion..." : "Ouvrir ma session"}
             </Text>
           </LinearGradient>
         </Pressable>

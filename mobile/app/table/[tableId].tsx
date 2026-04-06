@@ -13,8 +13,9 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { fetchCommandes, updateCommandeStatus } from "../../services/posApi";
 
 type TableStatus = "free" | "occupied" | "served";
 
@@ -31,19 +32,21 @@ type ServedOrder = {
   details: string;
 };
 
-const OCCUPIED_ORDERS: OccupiedOrder[] = [
-  { id: "2134", title: "Commande 2134", details: "3 articles • 12:50", badge: "PRET" },
-  { id: "2136", title: "Commande 2136", details: "1 article • 13:05", badge: "EN CUISINE" },
-];
+function formatCommandeTime(dateCommande: string | null): string {
+  if (!dateCommande) {
+    return "--:--";
+  }
 
-const SERVED_CURRENT_ORDERS: OccupiedOrder[] = [
-  { id: "2140", title: "Commande 2140", details: "2 articles • 13:15", badge: "EN CUISINE" },
-];
+  const date = new Date(dateCommande);
+  if (Number.isNaN(date.getTime())) {
+    return "--:--";
+  }
 
-const SERVED_DONE_ORDERS: ServedOrder[] = [
-  { id: "2134", title: "Commande 2134", details: "3 articles • 12:50" },
-  { id: "2136", title: "Commande 2136", details: "1 article • 13:05" },
-];
+  return date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function TableDetailScreen() {
   const router = useRouter();
@@ -71,9 +74,16 @@ export default function TableDetailScreen() {
   const status = (params.status as TableStatus | undefined) ?? "free";
   const capacity = Number(params.capacity ?? 4);
   const initialCovers = Number(params.covers ?? 2);
-  const openedAt = params.openedAt ?? "12:45";
-  const lastServedAt = params.lastServedAt ?? "13:12";
+  const openedAtParam = params.openedAt;
+  const lastServedAtParam = params.lastServedAt;
   const [covers, setCovers] = useState(Math.max(1, Math.min(initialCovers, capacity)));
+  const [openedAt, setOpenedAt] = useState(openedAtParam ?? "--:--");
+  const [lastServedAt, setLastServedAt] = useState(lastServedAtParam ?? "--:--");
+  const [tableStatus, setTableStatus] = useState<TableStatus>(status);
+  const [busyCurrentOrders, setBusyCurrentOrders] = useState<OccupiedOrder[]>([]);
+  const [servedDoneOrders, setServedDoneOrders] = useState<ServedOrder[]>([]);
+  const [servingOrderId, setServingOrderId] = useState<string | null>(null);
+  const [canRequestFacture, setCanRequestFacture] = useState(false);
 
   const uiScale = Math.max(0.72, Math.min(width / 430, 1));
   const verticalScale = Math.max(0.82, Math.min(height / 900, 1));
@@ -82,16 +92,130 @@ export default function TableDetailScreen() {
   const canIncrease = covers < capacity;
 
   const title = useMemo(() => `Table ${tableId}`, [tableId]);
-  const isOccupied = status === "occupied";
-  const isServed = status === "served";
+  const isOccupied = tableStatus === "occupied";
+  const isServed = tableStatus === "served";
   const isBusy = isOccupied || isServed;
-  const busyCurrentOrders = isServed ? SERVED_CURRENT_ORDERS : OCCUPIED_ORDERS;
+
+  useEffect(() => {
+    if (openedAtParam) {
+      setOpenedAt(openedAtParam);
+    }
+  }, [openedAtParam]);
+
+  useEffect(() => {
+    if (lastServedAtParam) {
+      setLastServedAt(lastServedAtParam);
+    }
+  }, [lastServedAtParam]);
+
+  useEffect(() => {
+    setTableStatus(status);
+  }, [status]);
+
+  const loadTableCommandes = useCallback(async () => {
+    try {
+      const tableNumero = Number(tableId);
+      if (Number.isNaN(tableNumero)) {
+        setBusyCurrentOrders([]);
+        setServedDoneOrders([]);
+        return;
+      }
+
+      const commandes = await fetchCommandes();
+      const tableCommandes = commandes.filter((commande) => commande.table_numero === tableNumero);
+
+      if (!openedAtParam && tableCommandes.length > 0) {
+        setOpenedAt(formatCommandeTime(tableCommandes[0].date_commande));
+      }
+
+      const current = tableCommandes
+        .filter((commande) => !["servie", "facturee"].includes(commande.statut))
+        .map((commande) => {
+          const badge: OccupiedOrder["badge"] = commande.statut === "prete" ? "PRET" : "EN CUISINE";
+
+          return {
+            id: String(commande.id),
+            title: `Commande ${commande.id}`,
+            details: `${commande.lignes.reduce((sum, ligne) => sum + ligne.quantite, 0)} articles • ${formatCommandeTime(commande.date_commande)}`,
+            badge,
+          };
+        });
+
+      const served = tableCommandes
+        .filter((commande) => ["servie", "facturee"].includes(commande.statut))
+        .map((commande) => ({
+          id: String(commande.id),
+          title: `Commande ${commande.id}`,
+          details: `${commande.lignes.reduce((sum, ligne) => sum + ligne.quantite, 0)} articles • ${formatCommandeTime(commande.date_commande)}`,
+        }));
+
+      const allServed =
+        tableCommandes.length > 0 &&
+        tableCommandes.every((commande) => ["servie", "facturee"].includes(commande.statut));
+
+      const lastServedCommande = tableCommandes
+        .filter((commande) => ["servie", "facturee"].includes(commande.statut))
+        .sort((a, b) => new Date(b.date_commande ?? 0).getTime() - new Date(a.date_commande ?? 0).getTime())[0];
+
+      setBusyCurrentOrders(current);
+      setServedDoneOrders(served);
+      setCanRequestFacture(allServed);
+
+      if (lastServedCommande) {
+        setLastServedAt(formatCommandeTime(lastServedCommande.date_commande));
+      }
+
+      if (served.length > 0) {
+        setTableStatus("served");
+      } else if (current.length > 0) {
+        setTableStatus("occupied");
+      }
+    } catch {
+      setBusyCurrentOrders([]);
+      setServedDoneOrders([]);
+      setCanRequestFacture(false);
+    }
+  }, [tableId, openedAtParam]);
+
+  useEffect(() => {
+    loadTableCommandes();
+  }, [loadTableCommandes]);
+
+  const serveOrder = async (orderId: string, badge: OccupiedOrder["badge"]) => {
+    if (badge !== "PRET" || servingOrderId) {
+      return;
+    }
+
+    setServingOrderId(orderId);
+
+    try {
+      const id = Number(orderId);
+      if (Number.isNaN(id)) {
+        return;
+      }
+
+      await updateCommandeStatus(id, "servie");
+      setLastServedAt(
+        new Date().toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+      setTableStatus("served");
+      await loadTableCommandes();
+    } finally {
+      setServingOrderId(null);
+    }
+  };
 
   const goToTableMenu = () => {
     router.push({
       pathname: "/table/[tableId]/menu",
       params: {
         tableId,
+        covers: String(covers),
+        openedAt,
+        status: tableStatus,
       },
     });
   };
@@ -115,7 +239,7 @@ export default function TableDetailScreen() {
 
       <View style={[styles.header, { paddingTop: Math.round(10 * verticalScale) }]}> 
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => router.replace("/pos")}
           style={({ pressed }) => [styles.backButton, pressed && styles.scaleDown]}
         >
           <MaterialCommunityIcons name="chevron-left" size={Math.round(36 * uiScale)} color="#0d1b36" />
@@ -186,17 +310,18 @@ export default function TableDetailScreen() {
                     <Text style={[styles.orderBadgeText, { fontSize: Math.round(14 * uiScale) }]}>{order.badge}</Text>
                   </View>
                   <Pressable
-                    disabled={order.badge === "EN CUISINE"}
+                    onPress={() => serveOrder(order.id, order.badge)}
+                    disabled={order.badge === "EN CUISINE" || servingOrderId === order.id}
                     style={({ pressed }) => [
                       styles.orderCheckButton,
-                      order.badge === "EN CUISINE" && styles.orderCheckButtonDisabled,
-                      pressed && order.badge !== "EN CUISINE" && styles.scaleDown,
+                      (order.badge === "EN CUISINE" || servingOrderId === order.id) && styles.orderCheckButtonDisabled,
+                      pressed && order.badge !== "EN CUISINE" && servingOrderId !== order.id && styles.scaleDown,
                     ]}
                   >
                     <MaterialCommunityIcons
                       name="check"
                       size={Math.round(34 * uiScale)}
-                      color={order.badge === "EN CUISINE" ? "#b1b8c4" : "#ffffff"}
+                      color={order.badge === "EN CUISINE" || servingOrderId === order.id ? "#b1b8c4" : "#ffffff"}
                     />
                   </Pressable>
                 </View>
@@ -209,7 +334,7 @@ export default function TableDetailScreen() {
               <Text style={[styles.servedSectionTitle, { fontSize: Math.round(22 * uiScale) }]}>Deja servis</Text>
 
               <View style={styles.occupiedOrdersWrap}>
-                {SERVED_DONE_ORDERS.map((order) => (
+                {servedDoneOrders.map((order) => (
                   <View key={order.id} style={[styles.orderCard, styles.orderCardServed]}>
                     <View style={[styles.orderRibbon, styles.orderRibbonServed]} />
                     <View style={styles.orderTextWrap}>
@@ -285,10 +410,17 @@ export default function TableDetailScreen() {
         {isOccupied ? (
           <>
             <View style={styles.dockHandle} />
-            <View style={styles.secondaryActionDisabled}>
-              <MaterialCommunityIcons name="receipt-text-outline" size={Math.round(26 * uiScale)} color="#a4aab4" />
-              <Text style={[styles.secondaryActionDisabledText, { fontSize: Math.round(18 * uiScale) }]}>Demander la facture</Text>
-            </View>
+            {canRequestFacture ? (
+              <Pressable onPress={goToFacture} style={({ pressed }) => [styles.secondaryActionEnabled, pressed && styles.scaleDown]}>
+                <MaterialCommunityIcons name="receipt-text-outline" size={Math.round(26 * uiScale)} color="#0d1b36" />
+                <Text style={[styles.secondaryActionEnabledText, { fontSize: Math.round(18 * uiScale) }]}>Demander la facture</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.secondaryActionDisabled}>
+                <MaterialCommunityIcons name="receipt-text-outline" size={Math.round(26 * uiScale)} color="#a4aab4" />
+                <Text style={[styles.secondaryActionDisabledText, { fontSize: Math.round(18 * uiScale) }]}>Demander la facture</Text>
+              </View>
+            )}
 
             <Pressable onPress={goToTableMenu} style={({ pressed }) => [styles.ctaWrap, pressed && styles.scaleDown]}>
               <LinearGradient
@@ -305,10 +437,17 @@ export default function TableDetailScreen() {
         ) : isServed ? (
           <>
             <View style={styles.dockHandle} />
-            <Pressable onPress={goToFacture} style={({ pressed }) => [styles.secondaryActionEnabled, pressed && styles.scaleDown]}>
-              <MaterialCommunityIcons name="receipt-text-outline" size={Math.round(26 * uiScale)} color="#0d1b36" />
-              <Text style={[styles.secondaryActionEnabledText, { fontSize: Math.round(18 * uiScale) }]}>Demander la facture</Text>
-            </Pressable>
+            {canRequestFacture ? (
+              <Pressable onPress={goToFacture} style={({ pressed }) => [styles.secondaryActionEnabled, pressed && styles.scaleDown]}>
+                <MaterialCommunityIcons name="receipt-text-outline" size={Math.round(26 * uiScale)} color="#0d1b36" />
+                <Text style={[styles.secondaryActionEnabledText, { fontSize: Math.round(18 * uiScale) }]}>Demander la facture</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.secondaryActionDisabled}>
+                <MaterialCommunityIcons name="receipt-text-outline" size={Math.round(26 * uiScale)} color="#a4aab4" />
+                <Text style={[styles.secondaryActionDisabledText, { fontSize: Math.round(18 * uiScale) }]}>Demander la facture</Text>
+              </View>
+            )}
 
             <Pressable onPress={goToTableMenu} style={({ pressed }) => [styles.ctaWrap, pressed && styles.scaleDown]}>
               <LinearGradient
