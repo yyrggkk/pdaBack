@@ -66,6 +66,12 @@ const STATUS_STYLES = {
   },
 };
 
+const STATUS_PRIORITY: Record<OrderStatus, number> = {
+  ready: 0,
+  kitchen: 1,
+  served: 2,
+};
+
 export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps = {}) {
   const { width, height } = useWindowDimensions();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -141,8 +147,10 @@ export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps =
   };
 
   const filteredOrders = useMemo(() => {
-    if (filter === "all") return orders;
-    return orders.filter((item) => item.status === filter);
+    const statusSorted = [...orders].sort((a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]);
+
+    if (filter === "all") return statusSorted;
+    return statusSorted.filter((item) => item.status === filter);
   }, [filter, orders]);
 
   const readyCount = orders.filter((item) => item.status === "ready").length;

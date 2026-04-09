@@ -1,12 +1,33 @@
 import axios from "axios";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 
 let authToken: string | null = null;
+
+function resolveExpoLanApiUrl(): string | null {
+  const hostUri = Constants.expoConfig?.hostUri;
+
+  if (!hostUri) {
+    return null;
+  }
+
+  const [host] = hostUri.split(":");
+  if (!host) {
+    return null;
+  }
+
+  return `http://${host}:8000/api`;
+}
 
 function resolveBaseUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (envUrl && envUrl.trim().length > 0) {
     return envUrl.replace(/\/$/, "");
+  }
+
+  const expoLanUrl = resolveExpoLanApiUrl();
+  if (expoLanUrl) {
+    return expoLanUrl;
   }
 
   if (Platform.OS === "android") {
