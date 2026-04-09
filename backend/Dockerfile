@@ -15,7 +15,7 @@ FROM php:8.3-cli-alpine
 WORKDIR /var/www/html
 
 RUN apk add --no-cache bash icu-libs libpq libzip oniguruma unzip \
-    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev postgresql-dev \
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev postgresql-dev oniguruma-dev \
     && docker-php-ext-install pdo_pgsql mbstring bcmath intl zip \
     && apk del .build-deps
 
