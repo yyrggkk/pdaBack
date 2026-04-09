@@ -53,7 +53,7 @@ class ArticleSeeder extends Seeder
                         'description' => 'Recette maison inspirée de la cuisine marocaine.',
                         'prix' => $article['prix'],
                         'disponible' => $article['disponible'],
-                        'image' => $article['image'],
+                        'image' => isset($article['image']) ? mb_substr($article['image'], 0, 255) : null,
                     ]
                 );
             }
