@@ -29,7 +29,8 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
 
 ENV APP_ENV=production
 ENV PORT=10000
+ENV RUN_SEEDERS=false
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
+CMD ["sh", "-c", "php artisan migrate --force && if [ \"${RUN_SEEDERS}\" = \"true\" ]; then php artisan db:seed --force; fi && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
