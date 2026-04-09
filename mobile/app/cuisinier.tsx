@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { fetchCommandes, logoutCurrentUser, updateCommandeStatus } from "../services/posApi";
+import { fetchCommandes, LIVE_SYNC_INTERVAL_MS, logoutCurrentUser, updateCommandeStatus } from "../services/posApi";
 
 type TicketStatus = "urgent" | "in-progress";
 
@@ -155,6 +155,14 @@ export default function CuisinierScreen() {
     };
 
     loadKitchenTickets();
+
+    const intervalId = setInterval(() => {
+      loadKitchenTickets();
+    }, LIVE_SYNC_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   const toggleItem = (ticketId: string, itemId: string) => {

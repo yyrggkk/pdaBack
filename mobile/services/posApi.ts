@@ -2,6 +2,8 @@ import { api, setAuthToken } from "./api";
 
 let currentUserId: number | null = null;
 
+export const LIVE_SYNC_INTERVAL_MS = 2000;
+
 export type LoginResponse = {
   token: string;
   user: {
@@ -85,7 +87,9 @@ export function getCurrentUserId(): number | null {
 }
 
 export async function fetchTables(): Promise<ApiTable[]> {
-  const response = await api.get<ApiTable[]>("/tables");
+  const response = await api.get<ApiTable[]>("/tables", {
+    params: { _ts: Date.now() },
+  });
   return response.data;
 }
 
@@ -96,7 +100,10 @@ export async function fetchMenuCategories(): Promise<ApiMenuCategory[]> {
 
 export async function fetchCommandes(statuses?: string[]): Promise<ApiCommande[]> {
   const response = await api.get<{ commandes: ApiCommande[] }>("/commandes", {
-    params: statuses && statuses.length > 0 ? { statut: statuses.join(",") } : undefined,
+    params: {
+      ...(statuses && statuses.length > 0 ? { statut: statuses.join(",") } : {}),
+      _ts: Date.now(),
+    },
   });
 
   return response.data.commandes;

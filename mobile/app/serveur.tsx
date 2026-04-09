@@ -22,7 +22,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { fetchTables, logoutCurrentUser } from "../services/posApi";
+import { fetchTables, LIVE_SYNC_INTERVAL_MS, logoutCurrentUser } from "../services/posApi";
 
 type TableStatus = "free" | "occupied" | "served" | "disabled";
 
@@ -92,6 +92,14 @@ export function ServeurScreen({ showBottomNav = true }: ServeurScreenProps = {})
     };
 
     loadTables();
+
+    const intervalId = setInterval(() => {
+      loadTables();
+    }, LIVE_SYNC_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   const handleLogout = async () => {

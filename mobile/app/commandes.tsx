@@ -15,7 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import BottomNavBar from "../components/BottomNavBar";
-import { fetchCommandes, updateCommandeStatus } from "../services/posApi";
+import { fetchCommandes, LIVE_SYNC_INTERVAL_MS, updateCommandeStatus } from "../services/posApi";
 
 type OrderStatus = "ready" | "kitchen" | "served";
 type FilterKey = "all" | "ready" | "kitchen" | "served";
@@ -124,6 +124,14 @@ export function CommandesScreen({ showBottomNav = true }: CommandesScreenProps =
 
   useEffect(() => {
     loadCommandes();
+
+    const intervalId = setInterval(() => {
+      loadCommandes();
+    }, LIVE_SYNC_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   const markOrderServed = async (orderId: string) => {

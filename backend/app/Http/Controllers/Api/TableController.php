@@ -19,7 +19,10 @@ class TableController extends Controller
             ->get()
             ->map(fn(TableRestaurant $table) => $this->formatTable($table));
 
-        return response()->json($tables);
+        return response()
+            ->json($tables)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function show(int $id): JsonResponse

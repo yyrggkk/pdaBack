@@ -3,7 +3,7 @@ import BottomNavBar from "../components/BottomNavBar";
 import { ServeurScreen } from "./serveur";
 import { MenuScreen } from "./menu";
 import { CommandesScreen } from "./commandes";
-import { fetchCommandes } from "../services/posApi";
+import { fetchCommandes, LIVE_SYNC_INTERVAL_MS } from "../services/posApi";
 
 type PosTab = "plan" | "menu" | "commandes";
 
@@ -32,7 +32,7 @@ export default function PosScreen() {
     };
 
     loadReadyCount();
-    const intervalId = setInterval(loadReadyCount, 5000);
+    const intervalId = setInterval(loadReadyCount, LIVE_SYNC_INTERVAL_MS);
 
     return () => {
       isMounted = false;

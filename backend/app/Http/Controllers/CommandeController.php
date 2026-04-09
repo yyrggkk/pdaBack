@@ -59,7 +59,10 @@ class CommandeController extends Controller
             ];
         });
 
-        return response()->json(['commandes' => $response]);
+        return response()
+            ->json(['commandes' => $response])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     /**
